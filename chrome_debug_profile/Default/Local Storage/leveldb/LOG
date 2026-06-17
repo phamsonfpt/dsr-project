@@ -1,6 +1,18 @@
-2026/06/17-15:04:21.472 1de0 Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\Local Storage\leveldb/MANIFEST-000001
-2026/06/17-15:04:21.477 1de0 Recovering log #83
-2026/06/17-15:04:21.478 1de0 Reusing old log D:\dsr-project\chrome_debug_profile\Default\Local Storage\leveldb/000083.log 
-2026/06/17-15:05:21.490 6e54 Level-0 table #87: started
-2026/06/17-15:05:21.499 6e54 Level-0 table #87: 18743 bytes OK
-2026/06/17-15:05:21.504 6e54 Delete type=0 #83
+2026/06/17-15:32:07.978 9a8 Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\Local Storage\leveldb/MANIFEST-000001
+2026/06/17-15:32:07.981 9a8 Recovering log #97
+2026/06/17-15:32:07.982 9a8 Reusing old log D:\dsr-project\chrome_debug_profile\Default\Local Storage\leveldb/000097.log 
+2026/06/17-15:32:15.389 18bc Level-0 table #100: started
+2026/06/17-15:32:15.393 18bc Level-0 table #100: 18648 bytes OK
+2026/06/17-15:32:15.394 18bc Delete type=0 #97
+2026/06/17-15:33:01.819 9a8 Level-0 table #102: started
+2026/06/17-15:33:01.820 9a8 Level-0 table #102: 17500 bytes OK
+2026/06/17-15:33:01.821 9a8 Delete type=0 #99
+2026/06/17-15:33:01.821 9a8 Compacting 4@0 + 1@1 files
+2026/06/17-15:33:01.830 9a8 Generated table #103@0: 52 keys, 414320 bytes
+2026/06/17-15:33:01.830 9a8 Compacted 4@0 + 1@1 files => 414320 bytes
+2026/06/17-15:33:01.831 9a8 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/06/17-15:33:01.831 9a8 Delete type=2 #91
+2026/06/17-15:33:01.832 9a8 Delete type=2 #94
+2026/06/17-15:33:01.832 9a8 Delete type=2 #96
+2026/06/17-15:33:01.832 9a8 Delete type=2 #100
+2026/06/17-15:33:01.832 9a8 Delete type=2 #102

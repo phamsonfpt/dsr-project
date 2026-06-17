@@ -372,3 +372,51 @@
 15:05:32 │ INFO     │ ════════════════════════════════════════════════════════════
 15:05:32 │ INFO     │ ✅ HOÀN THÀNH: 100 việc làm trong 70.9 giây
 15:05:32 │ INFO     │ ════════════════════════════════════════════════════════════
+15:23:11 │ INFO     │ ✅ Đọc cấu hình từ D:\dsr-project\python_scraper\config.json thành công
+15:23:11 │ INFO     │ ✅ Đã ghi đè cấu hình từ user_settings.json
+15:23:11 │ INFO     │ ════════════════════════════════════════════════════════════
+15:23:11 │ INFO     │ 🏁 BẮT ĐẦU THU THẬP DỮ LIỆU TỪ VIETNAMWORKS.COM
+15:23:11 │ INFO     │    URL: https://www.vietnamworks.com/viec-lam?q=it-software
+15:23:11 │ INFO     │    Số trang tối đa: 2
+15:23:11 │ INFO     │ ════════════════════════════════════════════════════════════
+15:23:12 │ INFO     │ 🚀 Trình duyệt đã khởi tạo (headless=False)
+15:23:12 │ INFO     │ 🌐 Đang truy cập https://www.vietnamworks.com/viec-lam?q=it-software ...
+15:23:31 │ INFO     │ ────────────────────────────────────────
+15:23:31 │ INFO     │ 📖 Đang xử lý trang 1/2 ...
+15:23:40 │ INFO     │ Tìm thấy 50 job cards với selector 'css:div[data-job-card-version]'
+15:23:41 │ INFO     │ 📄 Trang 1/2: Thu thập 50/50 việc làm (tổng cộng: 50)
+15:24:02 │ INFO     │ Tìm thấy 9 job cards với selector 'css:div[data-job-card-version]'
+15:24:02 │ INFO     │ ➡️  Chuyển trang qua URL: page=2
+15:24:02 │ INFO     │ ────────────────────────────────────────
+15:24:02 │ INFO     │ 📖 Đang xử lý trang 2/2 ...
+15:24:09 │ INFO     │ Tìm thấy 50 job cards với selector 'css:div[data-job-card-version]'
+15:24:10 │ INFO     │ 📄 Trang 2/2: Thu thập 50/50 việc làm (tổng cộng: 100)
+15:24:10 │ INFO     │ 💾 Đã lưu 100 việc làm → D:\dsr-project\data\raw\vnw_jobs_raw.csv
+15:24:12 │ INFO     │ 🔒 Trình duyệt đã đóng
+15:24:12 │ INFO     │ ════════════════════════════════════════════════════════════
+15:24:12 │ INFO     │ ✅ HOÀN THÀNH: 100 việc làm trong 60.6 giây
+15:24:12 │ INFO     │ ════════════════════════════════════════════════════════════
+15:32:07 │ INFO     │ ✅ Đọc cấu hình từ D:\dsr-project\python_scraper\config.json thành công
+15:32:07 │ INFO     │ ✅ Đã ghi đè cấu hình từ user_settings.json
+15:32:07 │ INFO     │ ════════════════════════════════════════════════════════════
+15:32:07 │ INFO     │ 🏁 BẮT ĐẦU THU THẬP DỮ LIỆU TỪ VIETNAMWORKS.COM
+15:32:07 │ INFO     │    URL: https://www.vietnamworks.com/viec-lam?q=it-software
+15:32:07 │ INFO     │    Số trang tối đa: 2
+15:32:07 │ INFO     │ ════════════════════════════════════════════════════════════
+15:32:08 │ INFO     │ 🚀 Trình duyệt đã khởi tạo (headless=False)
+15:32:08 │ INFO     │ 🌐 Đang truy cập https://www.vietnamworks.com/viec-lam?q=it-software ...
+15:32:28 │ INFO     │ ────────────────────────────────────────
+15:32:28 │ INFO     │ 📖 Đang xử lý trang 1/2 ...
+15:32:36 │ INFO     │ Tìm thấy 50 job cards với selector 'css:div[data-job-card-version]'
+15:32:37 │ INFO     │ 📄 Trang 1/2: Thu thập 50/50 việc làm (tổng cộng: 50)
+15:32:55 │ INFO     │ Tìm thấy 9 job cards với selector 'css:div[data-job-card-version]'
+15:32:55 │ INFO     │ ➡️  Chuyển trang qua URL: page=2
+15:32:55 │ INFO     │ ────────────────────────────────────────
+15:32:55 │ INFO     │ 📖 Đang xử lý trang 2/2 ...
+15:33:00 │ INFO     │ Tìm thấy 50 job cards với selector 'css:div[data-job-card-version]'
+15:33:01 │ INFO     │ 📄 Trang 2/2: Thu thập 50/50 việc làm (tổng cộng: 100)
+15:33:01 │ INFO     │ 💾 Đã lưu 100 việc làm → D:\dsr-project\data\raw\vnw_jobs_raw.csv
+15:33:02 │ INFO     │ 🔒 Trình duyệt đã đóng
+15:33:02 │ INFO     │ ════════════════════════════════════════════════════════════
+15:33:02 │ INFO     │ ✅ HOÀN THÀNH: 100 việc làm trong 55.1 giây
+15:33:02 │ INFO     │ ════════════════════════════════════════════════════════════
