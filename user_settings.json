@@ -1,0 +1,24 @@
+{
+    "_comment": {
+        "topcv_capacity": "TopCV: ~50 bài/trang. Cào toàn bộ: max_pages >= 400 (khoảng 20.000 bài).",
+        "vietnamworks_capacity": "VietnamWorks: ~50 bài/trang. Cào toàn bộ: max_pages >= 300 (khoảng 15.000 bài).",
+        "model_strategy": "Hệ thống tự chọn model: < 5000 jobs → Machine Learning (TF-IDF), >= 5000 jobs → Deep Learning (Embedding + Qdrant).",
+        "date_filter": "Bật date_filter để lọc bài đăng theo ngày. start_date/end_date theo định dạng YYYY-MM-DD."
+    },
+    "topcv": {
+        "max_pages": 3,
+        "date_filter": {
+            "enabled": false,
+            "start_date": "2026-06-01",
+            "end_date": "2026-06-17"
+        }
+    },
+    "vietnamworks": {
+        "max_pages": 2,
+        "date_filter": {
+            "enabled": false,
+            "start_date": "2026-06-01",
+            "end_date": "2026-06-17"
+        }
+    }
+}

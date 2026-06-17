@@ -1,0 +1,90 @@
+# Chrome Debug Profiles
+chrome_debug_profile/
+chrome_debug_profile2/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+.Renviron
+
+# Data
+data/raw/*
+!data/raw/.gitkeep
+database/*.db
+database/*.sql
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+.DS_Store
+*.exe
+
+# Scratch/Temporary
+scratch/
+*.tmp
+*.log
+.env
+*.pid
+
+# Node (if used in Shiny app)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# JSON config files with sensitive data
+config.json
+user_settings.json
+
+# Local development files
+.local/
+*.bak

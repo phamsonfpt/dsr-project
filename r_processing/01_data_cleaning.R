@@ -1,0 +1,591 @@
+# ==============================================================================
+# 01_data_cleaning.R — Làm sạch và nạp dữ liệu CSV vào SQLite
+# Job Recommendation & Market Analysis Platform
+# ==============================================================================
+# Module cung cấp:
+#   - clean_and_load_data() : Đọc CSV → làm sạch → nạp vào jobs_clean + job_skills
+# ==============================================================================
+
+# --- Nạp module cấu hình DB -------------------------------------------------
+# Tự động tìm đường dẫn tương đối đến 00_db_config.R
+local({
+  this_dir <- tryCatch(
+    dirname(normalizePath(sys.frame(1)$ofile, winslash = "/")),
+    error = function(e) {
+      args <- commandArgs(trailingOnly = FALSE)
+      f <- grep("^--file=", args, value = TRUE)
+      if (length(f) > 0) dirname(normalizePath(sub("^--file=", "", f[1]), winslash = "/"))
+      else getwd()
+    }
+  )
+  config_path <- file.path(this_dir, "00_db_config.R")
+  if (!file.exists(config_path)) {
+    # Fallback: tìm trong r_processing/ từ project root
+    config_path <- file.path(getwd(), "r_processing", "00_db_config.R")
+  }
+  if (file.exists(config_path)) source(config_path, encoding = "UTF-8")
+  else stop("[DATA_CLEAN] Kh\u00f4ng t\u00ecm th\u1ea5y 00_db_config.R")
+})
+
+# --- Nạp thư viện -----------------------------------------------------------
+for (pkg in c("dplyr", "stringr", "readr", "tidyr")) {
+  if (!requireNamespace(pkg, quietly = TRUE)) install.packages(pkg)
+}
+library(dplyr)
+library(stringr)
+library(readr)
+library(tidyr)
+
+# ==============================================================================
+# Bảng mapping tên thành phố (viết tắt / phổ biến → chuẩn hóa)
+# ==============================================================================
+.city_mapping <- c(
+  "hcm"               = "TP.HCM",
+  "ho chi minh"       = "TP.HCM",
+  "tp hcm"            = "TP.HCM",
+  "tp.hcm"            = "TP.HCM",
+  "tp. hcm"           = "TP.HCM",
+  "thanh pho ho chi minh" = "TP.HCM",
+  "sai gon"           = "TP.HCM",
+  "saigon"            = "TP.HCM",
+  "hn"                = "H\u00e0 N\u1ed9i",
+  "ha noi"            = "H\u00e0 N\u1ed9i",
+  "hanoi"             = "H\u00e0 N\u1ed9i",
+  "dn"                = "\u0110\u00e0 N\u1eb5ng",
+  "da nang"           = "\u0110\u00e0 N\u1eb5ng",
+  "danang"            = "\u0110\u00e0 N\u1eb5ng",
+  "hue"               = "Hu\u1ebf",
+  "hai phong"         = "H\u1ea3i Ph\u00f2ng",
+  "hp"                = "H\u1ea3i Ph\u00f2ng",
+  "can tho"           = "C\u1ea7n Th\u01a1",
+  "ct"                = "C\u1ea7n Th\u01a1",
+  "bien hoa"          = "Bi\u00ean H\u00f2a",
+  "vung tau"          = "V\u0169ng T\u00e0u",
+  "nha trang"         = "Nha Trang",
+  "quy nhon"          = "Quy Nh\u01a1n",
+  "bac ninh"          = "B\u1eafc Ninh",
+  "thai nguyen"       = "Th\u00e1i Nguy\u00ean",
+  "vinh"              = "Vinh",
+  "buon ma thuot"     = "Bu\u00f4n Ma Thu\u1ed9t",
+  "long an"           = "Long An",
+  "dong nai"          = "\u0110\u1ed3ng Nai",
+  "binh duong"        = "B\u00ecnh D\u01b0\u01a1ng"
+)
+
+# ==============================================================================
+# Hàm chuẩn hóa text: lowercase, bỏ ký tự đặc biệt, trim
+# ==============================================================================
+.standardize_text <- function(x) {
+  x %>%
+    str_to_lower() %>%
+    str_replace_all("[^\\p{L}\\p{N}\\s.+#/-]", " ") %>%   # giữ chữ, số, dấu chấm, +, #, /, -
+    str_squish()                                             # gộp khoảng trắng thừa
+}
+
+# ==============================================================================
+# Hàm chuẩn hóa tên thành phố
+# ==============================================================================
+.normalize_city <- function(city_raw) {
+  if (is.na(city_raw) || !nzchar(trimws(city_raw))) return(NA_character_)
+
+  # Chuẩn hóa: lowercase, bỏ dấu tiếng Việt cho so sánh, trim
+  city_lower <- city_raw %>%
+    str_to_lower() %>%
+    str_replace_all("[^\\p{L}\\p{N}\\s.]", " ") %>%
+    str_squish()
+
+  # Thử tìm trong bảng mapping
+  matched <- .city_mapping[city_lower]
+  if (!is.na(matched)) return(unname(matched))
+
+  # Nếu không match chính xác, thử tìm partial match
+
+  for (key in names(.city_mapping)) {
+    if (str_detect(city_lower, fixed(key))) {
+      return(unname(.city_mapping[key]))
+    }
+  }
+
+  # Không tìm thấy → giữ nguyên (capitalize first letter)
+  return(str_to_title(trimws(city_raw)))
+}
+
+# ==============================================================================
+# Hàm phân tích lương từ chuỗi text
+# Trả về list(salary_min, salary_max) đơn vị: triệu VND
+# ==============================================================================
+.parse_salary <- function(salary_text) {
+  result <- list(salary_min = NA_real_, salary_max = NA_real_)
+
+  if (is.na(salary_text) || !nzchar(trimws(salary_text))) return(result)
+
+  s <- str_to_lower(trimws(salary_text))
+
+  # Trường hợp "thỏa thuận" / "negotiable" / "cạnh tranh" → NA
+  if (str_detect(s, "th\u1ecfa thu\u1eadn|negotiable|c\u1ea1nh tranh|competitive|theo n\u0103ng l\u1ef1c")) {
+    return(result)
+  }
+
+  # Phát hiện đơn vị USD
+  is_usd <- str_detect(s, "usd|\\$")
+  usd_to_trieu <- 25000 / 1e6  # 1 USD = 0.025 triệu VND
+
+  # --- Pattern 1: Khoảng lương "10 - 15 triệu" hoặc "10-15tr" hoặc "$1000 - $2000"
+  range_match <- str_match(s, "([\\d.,]+)\\s*[-–~đến to]\\s*([\\d.,]+)")
+  if (!is.na(range_match[1, 1])) {
+    v1 <- as.numeric(str_replace_all(range_match[1, 2], ",", ""))
+    v2 <- as.numeric(str_replace_all(range_match[1, 3], ",", ""))
+
+    if (is_usd) {
+      # USD → triệu VND
+      result$salary_min <- v1 * usd_to_trieu
+      result$salary_max <- v2 * usd_to_trieu
+    } else if (v1 > 100) {
+      # Có thể là VND đầy đủ (ví dụ 10000000) → chuyển triệu
+      result$salary_min <- v1 / 1e6
+      result$salary_max <- v2 / 1e6
+    } else {
+      # Đơn vị triệu VND
+      result$salary_min <- v1
+      result$salary_max <- v2
+    }
+    return(result)
+  }
+
+  # --- Pattern 2: "Trên X triệu" / "Từ X triệu" / "Tối thiểu X"
+  above_match <- str_match(s, "(tr\u00ean|t\u1eeb|t\u1ed1i thi\u1ec3u|trên|tu|above|from|min)\\s*[:]?\\s*([\\d.,]+)")
+  if (!is.na(above_match[1, 1])) {
+    v <- as.numeric(str_replace_all(above_match[1, 3], ",", ""))
+    if (is_usd) v <- v * usd_to_trieu
+    else if (v > 100) v <- v / 1e6
+    result$salary_min <- v
+    return(result)
+  }
+
+  # --- Pattern 3: "Đến X triệu" / "Tối đa X" / "Dưới X"
+  below_match <- str_match(s, "(\u0111\u1ebfn|t\u1ed1i \u0111a|d\u01b0\u1edbi|den|up to|max|to)\\s*[:]?\\s*([\\d.,]+)")
+  if (!is.na(below_match[1, 1])) {
+    v <- as.numeric(str_replace_all(below_match[1, 3], ",", ""))
+    if (is_usd) v <- v * usd_to_trieu
+    else if (v > 100) v <- v / 1e6
+    result$salary_max <- v
+    return(result)
+  }
+
+  # --- Pattern 4: Chỉ có số đơn lẻ (ví dụ "15 triệu")
+  single_match <- str_match(s, "([\\d.,]+)\\s*(tri\u1ec7u|tr|million|m)")
+  if (!is.na(single_match[1, 1])) {
+    v <- as.numeric(str_replace_all(single_match[1, 2], ",", ""))
+    if (is_usd) v <- v * usd_to_trieu
+    result$salary_min <- v
+    result$salary_max <- v
+    return(result)
+  }
+
+  # --- Pattern 5: Chỉ có số USD đơn lẻ
+  if (is_usd) {
+    usd_match <- str_match(s, "([\\d.,]+)")
+    if (!is.na(usd_match[1, 1])) {
+      v <- as.numeric(str_replace_all(usd_match[1, 2], ",", ""))
+      result$salary_min <- v * usd_to_trieu
+      result$salary_max <- v * usd_to_trieu
+      return(result)
+    }
+  }
+
+  return(result)
+}
+
+# ==============================================================================
+# Hàm phân loại kinh nghiệm
+# Input: chuỗi text mô tả kinh nghiệm (ví dụ "2 năm", "3-5 years")
+# Output: Fresher / Junior / Mid / Senior
+# ==============================================================================
+.classify_experience <- function(exp_text) {
+  if (is.na(exp_text) || !nzchar(trimws(exp_text))) return(NA_character_)
+
+  s <- str_to_lower(trimws(exp_text))
+
+  # Nhận diện keyword trực tiếp
+  if (str_detect(s, "fresher|intern|th\u1ef1c t\u1eadp|m\u1edbi ra tr\u01b0\u1eddng|kh\u00f4ng y\u00eau c\u1ea7u")) {
+    return("Fresher")
+  }
+  if (str_detect(s, "senior|tr\u01b0\u1edfng|lead|manager|qu\u1ea3n l\u00fd|expert|principal")) {
+    return("Senior")
+  }
+
+  # Trích xuất số năm kinh nghiệm
+  # Pattern: "X năm" hoặc "X-Y năm" hoặc "X years" hoặc "X+"
+  range_match <- str_match(s, "(\\d+)\\s*[-–]\\s*(\\d+)")
+  if (!is.na(range_match[1, 1])) {
+    years <- mean(c(as.numeric(range_match[1, 2]), as.numeric(range_match[1, 3])))
+  } else {
+    num_match <- str_match(s, "(\\d+)")
+    if (!is.na(num_match[1, 1])) {
+      years <- as.numeric(num_match[1, 2])
+    } else {
+      return(NA_character_)
+    }
+  }
+
+  # Phân loại theo số năm
+  if (years <= 1)      return("Fresher")
+  else if (years <= 3) return("Junior")
+  else if (years <= 5) return("Mid")
+  else                 return("Senior")
+}
+
+# ==============================================================================
+# Hàm tách chuỗi skills thành vector riêng biệt
+# Input: "Python, SQL, Git" hoặc "Python; SQL; Git" hoặc "Python/SQL/Git"
+# Output: c("python", "sql", "git")
+# ==============================================================================
+.split_skills <- function(skills_text) {
+  if (is.na(skills_text) || !nzchar(trimws(skills_text))) return(character(0))
+
+  skills <- skills_text %>%
+    str_split("[,;/|]") %>%
+    unlist() %>%
+    str_squish() %>%
+    str_to_lower()
+
+  # Loại bỏ phần tử rỗng
+  skills <- skills[nzchar(skills)]
+
+  # Loại bỏ các tag không phải kỹ năng (phúc lợi, điều kiện, cấp độ học vấn)
+  # TopCV trả về nhiều tag meta không phải skill kỹ thuật
+  non_skill_patterns <- c(
+    "\\d+ năm kinh nghiệm",    # "2 năm kinh nghiệm chuyên môn"
+    "kinh nghiệm chuyên môn",
+    "nghỉ thứ [2-7]",
+    "thứ [2-7]",
+    "bảo hiểm",
+    "thưởng tháng",
+    "thưởng hiệu quả",
+    "phụ cấp",
+    "team building",
+    "happy hour",
+    "đại học trở lên",
+    "cao đẳng trở lên",
+    "trung cấp trở lên",
+    "tuổi \\d+",
+    "nam$", "^nữ$",
+    "tiếng anh giao tiếp",
+    "tiếng anh đọc hiểu",
+    "tiếng anh toeic",
+    "tiếng nhật",
+    "tiếng hàn",
+    "tiếng trung",
+    "it - phần mềm",
+    "it - phần cứng",
+    "chính phủ",
+    "dịch vụ công",
+    "điện.*điện.*điện",
+    "khám sức khỏe",
+    "du lịch hàng năm",
+    "thiết bị:",
+    "máy tính",
+    "công ty",
+    "cơ hội thăng tiến",
+    "môi trường",
+    "chế độ",
+    "phúc lợi"
+  )
+  pattern_regex <- paste(non_skill_patterns, collapse = "|")
+  skills <- skills[!str_detect(skills, pattern_regex)]
+
+  # Chuẩn hóa một số tên skill phổ biến
+  skills <- str_replace_all(skills, c(
+    "^js$"          = "javascript",
+    "^ts$"          = "typescript",
+    "^py$"          = "python",
+    "^ml$"          = "machine learning",
+    "^dl$"          = "deep learning",
+    "^ai$"          = "artificial intelligence",
+    "^ds$"          = "data science",
+    "^da$"          = "data analysis",
+    "^bi$"          = "business intelligence",
+    "^react\\.?js$" = "reactjs",
+    "^node\\.?js$"  = "nodejs",
+    "^vue\\.?js$"   = "vuejs",
+    "^angular\\.?js$" = "angularjs",
+    "^c\\+\\+$"     = "cpp",
+    "^c#$"          = "csharp"
+  ))
+
+  return(unique(skills))
+}
+
+# ==============================================================================
+# Hàm tự động phát hiện encoding của file CSV
+# ==============================================================================
+.detect_encoding <- function(file_path) {
+  # Thử đọc vài dòng với UTF-8 trước
+  tryCatch({
+    readLines(file_path, n = 5, encoding = "UTF-8", warn = FALSE)
+    return("UTF-8")
+  }, error = function(e) NULL)
+
+  # Fallback: latin1
+  return("latin1")
+}
+
+# ==============================================================================
+# clean_and_load_data()
+# Hàm chính: đọc CSV → làm sạch → nạp vào DB
+# ==============================================================================
+clean_and_load_data <- function() {
+  message("\n", strrep("=", 60))
+  message("[DATA_CLEAN] B\u1eaft \u0111\u1ea7u quy tr\u00ecnh l\u00e0m s\u1ea1ch d\u1eef li\u1ec7u...")
+  message(strrep("=", 60))
+
+  # --- 1. Tìm thư mục data/raw/ -----------------------------------------------
+  root <- get_project_root()
+  raw_dir <- file.path(root, "data", "raw")
+
+  if (!dir.exists(raw_dir)) {
+    stop("[DATA_CLEAN] Th\u01b0 m\u1ee5c data/raw/ kh\u00f4ng t\u1ed3n t\u1ea1i: ", raw_dir)
+  }
+
+  csv_files <- list.files(raw_dir, pattern = "\\.csv$", full.names = TRUE, ignore.case = TRUE)
+  if (length(csv_files) == 0) {
+    message("[DATA_CLEAN] Kh\u00f4ng c\u00f3 file CSV n\u00e0o trong data/raw/. K\u1ebft th\u00fac.")
+    return(invisible(NULL))
+  }
+
+  message("[DATA_CLEAN] T\u00ecm th\u1ea5y ", length(csv_files), " file CSV:")
+  for (f in csv_files) message("  \u2192 ", basename(f))
+
+  # --- 2. Đọc và gộp tất cả CSV -----------------------------------------------
+  all_data <- list()
+  for (csv_path in csv_files) {
+    message("\n[DATA_CLEAN] \u0110ang \u0111\u1ecdc: ", basename(csv_path))
+
+    df <- tryCatch({
+      enc <- .detect_encoding(csv_path)
+      readr::read_csv(
+        csv_path,
+        locale        = locale(encoding = enc),
+        col_types     = cols(.default = "c"),   # đọc tất cả cột dạng text
+        show_col_types = FALSE,
+        name_repair   = "minimal"
+      )
+    }, error = function(e) {
+      message("[DATA_CLEAN] L\u1ed7i \u0111\u1ecdc file ", basename(csv_path), ": ", conditionMessage(e))
+      return(NULL)
+    })
+
+    if (is.null(df) || nrow(df) == 0) {
+      message("[DATA_CLEAN] File r\u1ed7ng ho\u1eb7c l\u1ed7i, b\u1ecf qua.")
+      next
+    }
+
+    # Chuẩn hóa tên cột: lowercase, bỏ khoảng trắng
+    names(df) <- names(df) %>%
+      str_to_lower() %>%
+      str_replace_all("[^a-z0-9_]", "_") %>%
+      str_replace_all("_+", "_") %>%
+      str_remove("^_|_$")
+
+    # Thêm cột source từ tên file (ví dụ: topcv_jobs.csv → topcv)
+    df$source <- basename(csv_path) %>%
+      str_remove("\\.csv$") %>%
+      str_to_lower() %>%
+      str_extract("^[a-z]+")
+
+    message("[DATA_CLEAN]   ", nrow(df), " d\u00f2ng, ", ncol(df), " c\u1ed9t")
+    all_data[[length(all_data) + 1]] <- df
+  }
+
+  if (length(all_data) == 0) {
+    message("[DATA_CLEAN] Kh\u00f4ng c\u00f3 d\u1eef li\u1ec7u h\u1ee3p l\u1ec7 n\u00e0o \u0111\u01b0\u1ee3c \u0111\u1ecdc.")
+    return(invisible(NULL))
+  }
+
+  # Gộp tất cả dataframe (bind_rows xử lý cột thiếu tự động)
+  raw_df <- bind_rows(all_data)
+  message("\n[DATA_CLEAN] T\u1ed5ng c\u1ed9ng: ", nrow(raw_df), " d\u00f2ng th\u00f4")
+
+  # --- 3. Chuẩn hóa các cột chính ---------------------------------------------
+  message("[DATA_CLEAN] \u0110ang chu\u1ea9n h\u00f3a d\u1eef li\u1ec7u...")
+
+  # Tìm tên cột tương ứng (hỗ trợ nhiều tên gọi khác nhau)
+  .find_col <- function(df, patterns) {
+    for (p in patterns) {
+      matched <- grep(p, names(df), value = TRUE, ignore.case = TRUE)
+      if (length(matched) > 0) return(matched[1])
+    }
+    return(NA_character_)
+  }
+
+  col_title      <- .find_col(raw_df, c("^title$", "tieu_de", "job_title", "vi_tri", "position"))
+  col_company    <- .find_col(raw_df, c("^company$", "cong_ty", "employer", "nha_tuyen_dung"))
+  col_salary     <- .find_col(raw_df, c("salary", "luong", "muc_luong"))
+  col_experience <- .find_col(raw_df, c("experience", "kinh_nghiem", "exp"))
+  col_location   <- .find_col(raw_df, c("location", "dia_diem", "thanh_pho", "city", "noi_lam_viec"))
+  col_url        <- .find_col(raw_df, c("^url$", "link", "href", "job_url"))
+  col_skills     <- .find_col(raw_df, c("skill", "ky_nang", "technology", "tech_stack"))
+
+  # Kiểm tra cột bắt buộc
+  if (is.na(col_title) || is.na(col_company) || is.na(col_url)) {
+    stop("[DATA_CLEAN] Thi\u1ebfu c\u1ed9t b\u1eaft bu\u1ed9c (title, company, url). ",
+         "C\u00e1c c\u1ed9t hi\u1ec7n c\u00f3: ", paste(names(raw_df), collapse = ", "))
+  }
+
+  # Xây dựng dataframe chuẩn
+  clean_df <- tibble(
+    title      = .standardize_text(raw_df[[col_title]]),
+    company    = .standardize_text(raw_df[[col_company]]),
+    salary_raw = if (!is.na(col_salary)) raw_df[[col_salary]] else NA_character_,
+    exp_raw    = if (!is.na(col_experience)) raw_df[[col_experience]] else NA_character_,
+    location_raw = if (!is.na(col_location)) raw_df[[col_location]] else NA_character_,
+    url        = trimws(raw_df[[col_url]]),
+    skills_raw = if (!is.na(col_skills)) raw_df[[col_skills]] else NA_character_,
+    source     = raw_df$source
+  )
+
+  # --- 4. Parse salary ---------------------------------------------------------
+  message("[DATA_CLEAN] \u0110ang ph\u00e2n t\u00edch l\u01b0\u01a1ng...")
+  salary_parsed <- lapply(clean_df$salary_raw, .parse_salary)
+  clean_df$salary_min <- sapply(salary_parsed, `[[`, "salary_min")
+  clean_df$salary_max <- sapply(salary_parsed, `[[`, "salary_max")
+
+  # --- 5. Normalize location ----------------------------------------------------
+  message("[DATA_CLEAN] \u0110ang chu\u1ea9n h\u00f3a \u0111\u1ecba \u0111i\u1ec3m...")
+  clean_df$location <- sapply(clean_df$location_raw, .normalize_city, USE.NAMES = FALSE)
+
+  # --- 6. Classify experience ---------------------------------------------------
+  message("[DATA_CLEAN] \u0110ang ph\u00e2n lo\u1ea1i kinh nghi\u1ec7m...")
+  clean_df$experience_level <- sapply(clean_df$exp_raw, .classify_experience, USE.NAMES = FALSE)
+
+  # --- 7. Deduplicate -----------------------------------------------------------
+  n_before <- nrow(clean_df)
+  clean_df <- clean_df %>%
+    distinct(title, company, url, .keep_all = TRUE)
+  n_after <- nrow(clean_df)
+  message("[DATA_CLEAN] Lo\u1ea1i tr\u00f9ng: ", n_before, " \u2192 ", n_after,
+          " (b\u1ecf ", n_before - n_after, " b\u1ea3n ghi tr\u00f9ng)")
+
+  # Loại bỏ hàng thiếu URL
+  clean_df <- clean_df %>% filter(!is.na(url), nzchar(url))
+  message("[DATA_CLEAN] Sau l\u1ecdc URL h\u1ee3p l\u1ec7: ", nrow(clean_df), " b\u1ea3n ghi")
+
+  # --- 8. Tách skills thành bảng riêng ------------------------------------------
+  message("[DATA_CLEAN] \u0110ang t\u00e1ch k\u1ef9 n\u0103ng...")
+  skills_list <- lapply(seq_len(nrow(clean_df)), function(i) {
+    skills <- .split_skills(clean_df$skills_raw[i])
+    if (length(skills) > 0) {
+      tibble(row_idx = i, skill_name = skills)
+    } else {
+      NULL
+    }
+  })
+  skills_df <- bind_rows(skills_list)
+  message("[DATA_CLEAN] T\u1ed5ng s\u1ed1 c\u1eb7p job-skill: ", nrow(skills_df))
+
+  # --- 9. Ghi vào DB -----------------------------------------------------------
+  message("\n[DATA_CLEAN] \u0110ang ghi d\u1eef li\u1ec7u v\u00e0o SQLite...")
+  con <- get_db_connection()
+
+  tryCatch({
+    # Bắt đầu transaction cho performance
+    dbBegin(con)
+
+    # Xóa dữ liệu cũ để đảm bảo mỗi lần chạy là dữ liệu mới (theo yêu cầu user)
+    dbExecute(con, "DELETE FROM jobs_clean")
+    dbExecute(con, "DELETE FROM job_skills")
+    dbExecute(con, "DELETE FROM market_trends")
+
+    # UPSERT jobs_clean: dùng INSERT OR REPLACE (url là UNIQUE)
+    jobs_insert <- clean_df %>%
+      select(title, company, salary_min, salary_max, experience_level, location, url, source) %>%
+      mutate(
+        scraped_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+        updated_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+      )
+
+    # Chuẩn bị câu lệnh INSERT OR REPLACE
+    insert_sql <- paste0(
+      "INSERT OR REPLACE INTO jobs_clean ",
+      "(title, company, salary_min, salary_max, experience_level, location, url, source, scraped_at, updated_at) ",
+      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+
+    stmt <- dbSendStatement(con, insert_sql)
+    n_inserted <- 0
+
+    for (i in seq_len(nrow(jobs_insert))) {
+      row <- jobs_insert[i, ]
+      tryCatch({
+        dbBind(stmt, list(
+          row$title, row$company,
+          as.numeric(row$salary_min), as.numeric(row$salary_max),
+          row$experience_level, row$location,
+          row$url, row$source,
+          row$scraped_at, row$updated_at
+        ))
+        n_inserted <- n_inserted + 1
+      }, error = function(e) {
+        message("[DATA_CLEAN]   C\u1ea3nh b\u00e1o d\u00f2ng ", i, ": ", conditionMessage(e))
+      })
+    }
+    dbClearResult(stmt)
+    message("[DATA_CLEAN] \u0110\u00e3 ghi ", n_inserted, "/", nrow(jobs_insert), " b\u1ea3n ghi v\u00e0o jobs_clean")
+
+    # Lấy lại job_id cho mỗi URL (để map skills)
+    url_to_id <- dbGetQuery(con, "SELECT job_id, url FROM jobs_clean")
+
+    # Ghi job_skills
+    if (nrow(skills_df) > 0) {
+      # Map row_idx → url → job_id
+      skills_df$url <- clean_df$url[skills_df$row_idx]
+      skills_df <- skills_df %>%
+        inner_join(url_to_id, by = "url") %>%
+        select(job_id, skill_name)
+
+      # Xóa skills cũ của các job được cập nhật
+      affected_ids <- unique(skills_df$job_id)
+      if (length(affected_ids) > 0) {
+        placeholders <- paste(rep("?", length(affected_ids)), collapse = ",")
+        dbExecute(
+          con,
+          paste0("DELETE FROM job_skills WHERE job_id IN (", placeholders, ")"),
+          params = as.list(affected_ids)
+        )
+      }
+
+      # INSERT skills mới
+      skill_sql <- "INSERT OR IGNORE INTO job_skills (job_id, skill_name) VALUES (?, ?)"
+      skill_stmt <- dbSendStatement(con, skill_sql)
+      n_skills <- 0
+      for (i in seq_len(nrow(skills_df))) {
+        tryCatch({
+          dbBind(skill_stmt, list(skills_df$job_id[i], skills_df$skill_name[i]))
+          n_skills <- n_skills + 1
+        }, error = function(e) NULL)
+      }
+      dbClearResult(skill_stmt)
+      message("[DATA_CLEAN] \u0110\u00e3 ghi ", n_skills, " b\u1ea3n ghi v\u00e0o job_skills")
+    }
+
+    dbCommit(con)
+    message("\n[DATA_CLEAN] \u2705 Ho\u00e0n t\u1ea5t quy tr\u00ecnh l\u00e0m s\u1ea1ch d\u1eef li\u1ec7u!")
+
+  }, error = function(e) {
+    dbRollback(con)
+    message("[DATA_CLEAN] \u274c L\u1ed7i: ", conditionMessage(e))
+    stop(e)
+  }, finally = {
+    close_db_connection(con)
+  })
+
+  # Trả về summary
+  invisible(list(
+    total_jobs   = nrow(clean_df),
+    total_skills = nrow(skills_df),
+    files_read   = length(csv_files)
+  ))
+}
+
+message("[DATA_CLEAN] Module 01_data_cleaning.R \u0111\u00e3 s\u1eb5n s\u00e0ng.")
+message("  G\u1ecdi clean_and_load_data() \u0111\u1ec3 ch\u1ea1y quy tr\u00ecnh l\u00e0m s\u1ea1ch.")

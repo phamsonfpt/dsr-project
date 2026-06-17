@@ -1,0 +1,64 @@
+{
+    "topcv": {
+        "base_url": "https://www.topcv.vn/tim-viec-lam-it-phan-mem-c10026",
+        "max_pages": 1,
+        "delay_range": [
+            1.5,
+            4.5
+        ],
+        "selectors": {
+            "job_card": "css:.job-item-search-result, .job-item-default",
+            "title": "h3.title a",
+            "company": "a.company, .company-name",
+            "salary": "label.title-salary, .salary",
+            "location": "label.address, .address",
+            "experience": "label.experience, .experience",
+            "skills": ".tag .item-tag",
+            "url": "h3.title a",
+            "next_page": "a.next-page, .pagination li.active + li a"
+        },
+        "fallback_selectors": {
+            "job_card": ".job-item-search-result, .job-item-default",
+            "title": "h3.title a",
+            "company": ".employer-name",
+            "salary": ".icon-salary + span",
+            "location": ".city-text",
+            "experience": ".icon-experience + span",
+            "skills": ".box-icon .tag .item-tag",
+            "url": "h3.title a",
+            "next_page": ".pagination li.active + li a"
+        }
+    },
+    "vietnamworks": {
+        "base_url": "https://www.vietnamworks.com/viec-lam?q=it-software",
+        "max_pages": 1,
+        "delay_range": [
+            2.0,
+            5.0
+        ],
+        "selectors": {
+            "job_card": "css:div[data-job-card-version], .job-item-search-result",
+            "title": "css:h2 a",
+            "company": "css:a[href*='/nha-tuyen-dung/']",
+            "salary": "css:span.sc-dauhQT, span[class*='iwEfEz']",
+            "location": "css:span.sc-jNUliw, span[class*='kVIiDJ']",
+            "experience": "css:.not-exist-in-new-ui",
+            "skills": "css:label[name='label']",
+            "url": "css:h2 a",
+            "next_page": "a.next-page, button.next"
+        },
+        "fallback_selectors": {
+            "job_card": "[data-job-id], .search-result-item, [class*='listing'], .view_job_item",
+            "title": "a[href*='/viec-lam/'], a[href*='/job/']",
+            "company": "span[class*='company'], div[class*='company']",
+            "salary": "span[class*='salary'], div[class*='salary']",
+            "location": "span[class*='location'], div[class*='location']",
+            "experience": "span[class*='exp'], div[class*='exp']",
+            "skills": ".tag, [class*='skill'] a",
+            "url": "a[href*='/viec-lam/'], a[href*='/job/']",
+            "next_page": "nav a[rel='next'], .pagination .next a"
+        }
+    },
+    "proxy": "",
+    "output_dir": "../data/raw"
+}
