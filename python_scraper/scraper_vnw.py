@@ -235,6 +235,7 @@ class VietnamWorksScraper:
         self.output_dir = config.get("output_dir", "../data/raw")
         self.proxy = config.get("proxy", "")
         self.headless = headless
+        self.detail_selectors = vnw_cfg.get("detail_selectors", {})
 
         
         user_settings = config.get('user_settings', {})
@@ -402,14 +403,102 @@ class VietnamWorksScraper:
             "title": _get("title", attr="title") or _get("title"),
             "company": _get("company"),
             "salary": _get("salary"),
-            "experience": _get("experience"),
             "location": _get("location"),
-            "skills": _get_multi("skills"),
             "url": url,
             "job_date": job_date,
-            "source": "vietnamworks",
+            "source": "vnw",
             "scraped_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "job_description": "",
+            "requirements": "",
+            "benefits": ""
         }
+
+    def _extract_job_details(self, url: str) -> dict:
+        """
+        Mở tab mới, cào chi tiết Job Description và Experience từ trang chi tiết VietnamWorks.
+        """
+        result = {"job_description": "", "requirements": "", "benefits": "", "experience": ""}
+        if not url: return result
+        
+        jd_selector = self.detail_selectors.get("job_description", "css:.description, .job-detail-content, .job-description")
+        exp_selector = self.detail_selectors.get("experience", "css:.summary-item, span:contains('Năm Kinh Nghiệm')")
+        
+        tab = None
+        try:
+            tab = self.page.new_tab(url)
+            time.sleep(random.uniform(1.0, 2.5))
+            
+            # 1. Lấy Job Description
+            jd_ele = None
+            try:
+                h2 = tab.ele('t:h2@text():Mô tả', timeout=1) or tab.ele('t:h2@text():Job description', timeout=1) or tab.ele('t:h2@text():Job Description', timeout=1)
+                if h2:
+                    jd_ele = h2.parent().parent()
+            except:
+                pass
+            
+            full_text = ""
+            if jd_ele:
+                full_text = jd_ele.text
+            else:
+                jd_fallback = tab.ele(jd_selector, timeout=2)
+                if jd_fallback:
+                    full_text = jd_fallback.text
+                    
+            if full_text:
+                import re
+                # Lọc bỏ đoạn văn bản rác do tính năng AI Matching của VNW chèn vào
+                full_text = re.sub(r'(?i)mức độ phù hợp.*?ứng viên khác.*?(?:như thế nào\??|NULL)', '', full_text).strip()
+                
+                req_match = re.search(r'(?i)(yêu cầu công việc|yêu cầu ứng viên|job requirement)(.*?)(?=phúc lợi|quyền lợi|những lợi ích|lợi ích|công ty cung cấp những gì|benefits|$)', full_text, re.DOTALL)
+                ben_match = re.search(r'(?i)(phúc lợi|quyền lợi|những lợi ích|lợi ích|công ty cung cấp những gì|benefits)(.*)', full_text, re.DOTALL)
+                jd_match = re.search(r'^(.*?)(?=yêu cầu công việc|yêu cầu ứng viên|job requirement|$)', full_text, re.DOTALL)
+                
+                result["job_description"] = jd_match.group(1).strip() if jd_match else full_text.strip()
+                result["requirements"] = req_match.group(2).strip() if req_match else ""
+                result["benefits"] = ben_match.group(2).strip() if ben_match else ""
+                
+            # --- Fallback: Tìm block Phúc lợi độc lập nếu regex không thấy ---
+            if not result.get("benefits"):
+                b_ele = tab.ele('h2:phúc lợi', timeout=1) or tab.ele('h2:Quyền lợi', timeout=1) or tab.ele('h3:phúc lợi', timeout=1) or tab.ele('h2:Benefits', timeout=1) or tab.ele('h2:lợi ích', timeout=1) or tab.ele('h3:lợi ích', timeout=1) or tab.ele('h2:Những lợi ích', timeout=1)
+                if b_ele:
+                    try:
+                        ben_content = ""
+                        sibling = b_ele.next()
+                        if sibling:
+                            ben_content = sibling.text
+                        if not ben_content or len(ben_content) < 10:
+                            parent = b_ele.parent()
+                            if parent:
+                                ben_content = parent.text
+                                if len(ben_content) < 10 and parent.parent():
+                                    ben_content = parent.parent().text
+                        ben_content = ben_content.replace(b_ele.text, "").strip()
+                        if ben_content:
+                            result["benefits"] = ben_content
+                    except Exception:
+                        pass
+                
+            # 2. Lấy Experience (VNW thường có thẻ span chứa "Kinh nghiệm" hoặc "Năm Kinh Nghiệm")
+            exp_ele = tab.ele(exp_selector, timeout=1)
+            if exp_ele:
+                # Nếu thẻ là summary-item, text sẽ kiểu "Kinh nghiệm\n1 - 3 năm"
+                parent = exp_ele.parent() if "Năm Kinh Nghiệm" in exp_ele.text else exp_ele
+                lines = parent.text.split('\n')
+                for i, line in enumerate(lines):
+                    if "Kinh nghiệm" in line or "Năm Kinh Nghiệm" in line:
+                        if i + 1 < len(lines):
+                            result["experience"] = lines[i+1].strip()
+                        else:
+                            result["experience"] = line.strip()
+                        break
+        except Exception as e:
+            logger.debug(f"  ⚠️ Lỗi lấy detail: {e}")
+        finally:
+            if tab:
+                tab.close()
+                
+        return result
 
     # ─────────────── ĐÓNG POPUP/BANNER ──────────────────────────────
     def _dismiss_popups(self) -> None:
@@ -476,15 +565,22 @@ class VietnamWorksScraper:
 
                 # Chỉ lưu nếu có thông tin hữu ích
                 if job["title"] or job["url"]:
+                    logger.debug("  🔍 Đang cào chi tiết JD cho: %s", job["url"])
+                    details = self._extract_job_details(job["url"])
+                    job["job_description"] = details["job_description"]
+                    job["requirements"] = details.get("requirements", "")
+                    job["benefits"] = details.get("benefits", "")
+                        
                     job["job_date_str"] = job.get("job_date").strftime("%Y-%m-%d") if job.get("job_date") else ""
                     job.pop("job_date", None)
                     self.jobs.append(job)
                     page_jobs += 1
                     logger.debug(
-                        "  📋 [%d/%d] %s — %s",
+                        "  📋 [%d/%d] %s — %s (JD: %s chars)",
                         idx, len(cards),
                         job["title"][:50] if job["title"] else "(no title)",
                         job["company"][:30] if job["company"] else "(no company)",
+                        len(job["job_description"])
                     )
                 else:
                     logger.debug("  ⏭️  [%d/%d] Bỏ qua card trống", idx, len(cards))

@@ -149,7 +149,7 @@ run_market_analysis <- function() {
     if (nrow(salary_jobs) > 0) {
       salary_by_role <- salary_jobs %>%
         group_by(title) %>%
-        filter(n() >= 2) %>%  # Chỉ tính cho vị trí có ≥ 2 bài đăng
+        # Bỏ điều kiện filter(n() >= 2) để hiển thị được biểu đồ ngay cả khi dữ liệu mỏng (chỉ cào 1 trang)
         summarise(
           value_metric = median(salary_avg, na.rm = TRUE),
           q1           = quantile(salary_avg, 0.25, na.rm = TRUE),
@@ -169,7 +169,8 @@ run_market_analysis <- function() {
           )
         ) %>%
         ungroup() %>%
-        select(key_name, value_metric, extra_json)
+        select(key_name, value_metric, extra_json) %>%
+        head(15) # Giới hạn hiển thị 15 vị trí có lương cao nhất để biểu đồ không quá tải
 
       .upsert_trends(con, "salary_by_role", salary_by_role)
     } else {

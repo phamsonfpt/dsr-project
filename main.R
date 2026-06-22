@@ -80,6 +80,11 @@ if (run_scrape) {
   cat(paste(rep("=", 60), collapse = ""), "\n")
 
   tryCatch({
+    cat("\n  [0/2] Xóa dữ liệu raw và database cũ theo yêu cầu...\n")
+    unlink(file.path(PROJECT_ROOT, "data", "raw", "*.csv"), force = TRUE)
+    unlink(file.path(PROJECT_ROOT, "database", "job_market.sqlite"), force = TRUE)
+    cat("  -> Đã xóa dữ liệu cũ thành công.\n\n")
+
     # Kiểm tra Python khả dụng (Ưu tiên môi trường ảo .venv nếu có)
     venv_python <- file.path(PROJECT_ROOT, ".venv", "Scripts", "python.exe")
     python_cmd <- if (file.exists(venv_python)) {
@@ -125,6 +130,19 @@ if (run_scrape) {
     } else {
       warning("  -> VietnamWorks: Có lỗi xảy ra (exit code ", vnw_result, ")")
     }
+
+    # Chạy translator
+    cat("\n  [3/3] Đang dịch dữ liệu sang tiếng Anh (Vietnamese -> English)...\n")
+    trans_result <- system(
+      paste(python_cmd, shQuote(file.path(PROJECT_ROOT, "python_scraper", "translator.py"))),
+      intern = FALSE
+    )
+    if (trans_result == 0) {
+      cat("  -> Dịch thuật: Hoàn thành!\n")
+    } else {
+      warning("  -> Dịch thuật: Có lỗi xảy ra (exit code ", trans_result, ")")
+    }
+
 
   }, error = function(e) {
     cat(paste0("\n  [LỖI] Không thể chạy Python scraper: ", e$message, "\n"))

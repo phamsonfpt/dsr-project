@@ -1,2 +1,0 @@
-14:12:04 │ ERROR    │ ❌ Không đọc được config: [Errno 2] No such file or directory: 'D:\\dsr-project\\scratch\\config.json'
-14:12:04 │ ERROR    │ Không thể khởi chạy do thiếu cấu hình. Thoát.

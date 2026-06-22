@@ -220,6 +220,7 @@ class TopCVScraper:
         self.output_dir = config.get("output_dir", "../data/raw")
         self.proxy = config.get("proxy", "")
         self.headless = headless
+        self.detail_selectors = topcv_cfg.get("detail_selectors", {})
 
         
         user_settings = config.get('user_settings', {})
@@ -358,14 +359,71 @@ class TopCVScraper:
             "title": _get("title"),
             "company": _get("company"),
             "salary": _get("salary"),
-            "experience": _get("experience"),
             "location": _get("location"),
-            "skills": _get_multi("skills"),
             "url": url,
             "job_date": job_date,
             "source": "topcv",
             "scraped_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "job_description": "",
+            "requirements": "",
+            "benefits": ""
         }
+
+    def _extract_job_details(self, url: str) -> dict:
+        """
+        Mở tab mới, cào chi tiết Job Description và Experience từ trang chi tiết.
+        """
+        result = {"job_description": "", "requirements": "", "benefits": "", "experience": ""}
+        if not url: return result
+        
+        jd_selector = "css:.job-detail__information-detail, .job-description, .box-info-job"
+        exp_selector = self.detail_selectors.get("experience", "css:.job-detail__box--left, .job-detail-info")
+        
+        tab = None
+        try:
+            tab = self.page.new_tab(url)
+            time.sleep(random.uniform(0.5, 1.5))
+            
+            # 1. Lấy Job Description (Bao phủ cả trang chuẩn và trang Brand)
+            jd_ele = tab.ele(jd_selector, timeout=3)
+            if not jd_ele:
+                # Cứu cánh cho trang Brand TopCV có HTML tuỳ biến: Lấy toàn bộ văn bản của trang
+                jd_ele = tab.ele('tag:body', timeout=1)
+                
+            if jd_ele:
+                full_text = jd_ele.text
+                import re
+                
+                # Lọc bỏ rác UI của TopCV
+                full_text = re.sub(r'(?i)Chi tiết tuyển dụng.*?Gửi cho tôi việc làm tương tự', '', full_text, flags=re.DOTALL).strip()
+                full_text = re.sub(r'(?i)^(Chi tiết tuyển dụng)', '', full_text).strip()
+                
+                req_match = re.search(r'(?i)(?:yêu cầu ứng viên|yêu cầu[:\s]?)(.*?)(?=(?:quyền lợi|phúc lợi|những lợi ích|chuyên môn|địa điểm làm việc|$))', full_text, re.DOTALL)
+                ben_match = re.search(r'(?i)(?:quyền lợi|phúc lợi|những lợi ích)[:\s]?(.*?)(?=(?:địa điểm làm việc|chuyên môn|cách thức|$))', full_text, re.DOTALL)
+                jd_match = re.search(r'(?i)(?:mô tả công việc[:\s]?)?(.*?)(?=(?:yêu cầu|quyền lợi|chuyên môn|$))', full_text, re.DOTALL)
+                
+                jd_text = jd_match.group(1).strip() if jd_match else full_text.strip()
+                jd_text = re.sub(r'(?i)^mô tả công việc[:\s]*', '', jd_text).strip()
+                
+                result["job_description"] = jd_text
+                result["requirements"] = req_match.group(1).strip() if req_match else ""
+                result["benefits"] = ben_match.group(1).strip() if ben_match else ""
+                
+            # 2. Lấy Experience (TopCV hiển thị "Kinh nghiệm\nDưới 1 năm")
+            box = tab.ele(exp_selector, timeout=1)
+            if box:
+                lines = box.text.split('\n')
+                for i, line in enumerate(lines):
+                    if "Kinh nghiệm" in line and i + 1 < len(lines):
+                        result["experience"] = lines[i+1].strip()
+                        break
+        except Exception as e:
+            logger.debug(f"  ⚠️ Lỗi lấy detail: {e}")
+        finally:
+            if tab:
+                tab.close()
+                
+        return result
 
     # ─────────────── THU THẬP MỘT TRANG ────────────────────────────
     def _scrape_page(self, page_num: int) -> int:
@@ -417,13 +475,19 @@ class TopCVScraper:
 
                 # Chỉ lưu nếu có ít nhất tiêu đề hoặc URL
                 if job["title"] or job["url"]:
+                    logger.debug("  🔍 Đang cào chi tiết JD cho: %s", job["url"])
+                    details = self._extract_job_details(job["url"])
+                    job["job_description"] = details["job_description"]
+                    job["requirements"] = details.get("requirements", "")
+                    job["benefits"] = details.get("benefits", "")
+                        
                     job["job_date_str"] = job.get("job_date").strftime("%Y-%m-%d") if job.get("job_date") else ""
                     job.pop("job_date", None)
                     self.jobs.append(job)
                     page_jobs += 1
                     logger.debug(
-                        "  📋 [%d/%d] %s — %s",
-                        idx, len(cards), job["title"][:50], job["company"][:30],
+                        "  📋 [%d/%d] %s — %s (JD: %s chars)",
+                        idx, len(cards), job["title"][:50], job["company"][:30], len(job["job_description"])
                     )
                 else:
                     logger.debug("  ⏭️  [%d/%d] Bỏ qua card trống", idx, len(cards))

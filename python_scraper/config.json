@@ -17,6 +17,10 @@
             "url": "h3.title a",
             "next_page": "a.next-page, .pagination li.active + li a"
         },
+        "detail_selectors": {
+            "job_description": "css:.job-description",
+            "experience": "css:.job-detail__box--left, .job-detail-info"
+        },
         "fallback_selectors": {
             "job_card": ".job-item-search-result, .job-item-default",
             "title": "h3.title a",
@@ -46,6 +50,10 @@
             "skills": "css:label[name='label']",
             "url": "css:h2 a",
             "next_page": "a.next-page, button.next"
+        },
+        "detail_selectors": {
+            "job_description": "css:.description, .job-detail-content, .job-description",
+            "experience": "css:.summary-item, span:contains('N\u0103m Kinh Nghi\u1ec7m')"
         },
         "fallback_selectors": {
             "job_card": "[data-job-id], .search-result-item, [class*='listing'], .view_job_item",
