@@ -4,7 +4,20 @@
 # ==============================================================================
 # Module cung cấp:
 #   - clean_and_load_data() : Đọc CSV → làm sạch → nạp vào jobs_clean + job_skills
+#   - Tách các kỹ năng từ chuỗi, lọc các kỹ năng IT cốt lõi
+#   - Phân tách Job Description thành Mô tả, Yêu cầu, Quyền lợi
 # ==============================================================================
+
+# Từ điển các kỹ năng/từ khóa IT cơ bản (dùng để lọc rác)
+IT_SKILLS_DICT <- c("java", "python", "sql", "react", "angular", "vue", "node", "javascript", 
+                   "html", "css", "c\\+\\+", "c#", "\\.net", "php", "ruby", "go", "rust", 
+                   "aws", "azure", "gcp", "docker", "kubernetes", "linux", "git", "api",
+                   "spring", "django", "laravel", "flask", "swift", "kotlin", "flutter",
+                   "dart", "android", "ios", "machine learning", "ai", "data", "qa", "qc",
+                   "tester", "devops", "agile", "scrum", "backend", "frontend", "fullstack",
+                   "system", "network", "security", "cloud", "mobile", "web", "UI", "UX",
+                   "product", "project", "BA", "business analyst", "software",
+                   "engineer", "developer", "lập trình", "công nghệ")
 
 # --- Nạp module cấu hình DB -------------------------------------------------
 # Tự động tìm đường dẫn tương đối đến 00_db_config.R
@@ -216,11 +229,11 @@ library(tidyr)
 
   # Trích xuất số năm kinh nghiệm
   # Pattern: "X năm" hoặc "X-Y năm" hoặc "X years" hoặc "X+"
-  range_match <- str_match(s, "(\\d+)\\s*[-–]\\s*(\\d+)")
+  range_match <- str_match(s, "(\\d+)\\s*[-–]\\s*(\\d+)\\s*(năm|year)")
   if (!is.na(range_match[1, 1])) {
     years <- mean(c(as.numeric(range_match[1, 2]), as.numeric(range_match[1, 3])))
   } else {
-    num_match <- str_match(s, "(\\d+)")
+    num_match <- str_match(s, "(\\d+)\\s*(năm|year)")
     if (!is.na(num_match[1, 1])) {
       years <- as.numeric(num_match[1, 2])
     } else {
@@ -251,69 +264,43 @@ library(tidyr)
 
   # Loại bỏ phần tử rỗng
   skills <- skills[nzchar(skills)]
+  
+  # Chỉ giữ lại skill nếu có chứa một trong các từ khóa thuộc IT_SKILLS_DICT
+  valid_skills <- skills[sapply(skills, function(s) any(str_detect(s, IT_SKILLS_DICT)))]
+  
+  return(unique(valid_skills))
+}
 
-  # Loại bỏ các tag không phải kỹ năng (phúc lợi, điều kiện, cấp độ học vấn)
-  # TopCV trả về nhiều tag meta không phải skill kỹ thuật
-  non_skill_patterns <- c(
-    "\\d+ năm kinh nghiệm",    # "2 năm kinh nghiệm chuyên môn"
-    "kinh nghiệm chuyên môn",
-    "nghỉ thứ [2-7]",
-    "thứ [2-7]",
-    "bảo hiểm",
-    "thưởng tháng",
-    "thưởng hiệu quả",
-    "phụ cấp",
-    "team building",
-    "happy hour",
-    "đại học trở lên",
-    "cao đẳng trở lên",
-    "trung cấp trở lên",
-    "tuổi \\d+",
-    "nam$", "^nữ$",
-    "tiếng anh giao tiếp",
-    "tiếng anh đọc hiểu",
-    "tiếng anh toeic",
-    "tiếng nhật",
-    "tiếng hàn",
-    "tiếng trung",
-    "it - phần mềm",
-    "it - phần cứng",
-    "chính phủ",
-    "dịch vụ công",
-    "điện.*điện.*điện",
-    "khám sức khỏe",
-    "du lịch hàng năm",
-    "thiết bị:",
-    "máy tính",
-    "công ty",
-    "cơ hội thăng tiến",
-    "môi trường",
-    "chế độ",
-    "phúc lợi"
-  )
-  pattern_regex <- paste(non_skill_patterns, collapse = "|")
-  skills <- skills[!str_detect(skills, pattern_regex)]
-
-  # Chuẩn hóa một số tên skill phổ biến
-  skills <- str_replace_all(skills, c(
-    "^js$"          = "javascript",
-    "^ts$"          = "typescript",
-    "^py$"          = "python",
-    "^ml$"          = "machine learning",
-    "^dl$"          = "deep learning",
-    "^ai$"          = "artificial intelligence",
-    "^ds$"          = "data science",
-    "^da$"          = "data analysis",
-    "^bi$"          = "business intelligence",
-    "^react\\.?js$" = "reactjs",
-    "^node\\.?js$"  = "nodejs",
-    "^vue\\.?js$"   = "vuejs",
-    "^angular\\.?js$" = "angularjs",
-    "^c\\+\\+$"     = "cpp",
-    "^c#$"          = "csharp"
+# ==============================================================================
+# Hàm phân tách Job Description thành 3 phần: Mô tả, Yêu cầu, Quyền lợi
+# ==============================================================================
+.parse_jd_sections <- function(jd_text) {
+  if (is.na(jd_text) || !nzchar(trimws(jd_text))) {
+    return(list(desc = NA_character_, req = NA_character_, ben = NA_character_))
+  }
+  
+  # Định nghĩa các pattern chia section (Regex)
+  req_pattern <- "(?is)(yêu cầu ứng viên|yêu cầu công việc|kinh nghiệm yêu cầu).*?(?=(quyền lợi|phúc lợi|công ty cung cấp những gì|thời gian làm việc|địa điểm làm việc|$))"
+  ben_pattern <- "(?is)(quyền lợi|phúc lợi|công ty cung cấp những gì|chế độ).*?(?=(yêu cầu ứng viên|yêu cầu công việc|thời gian làm việc|địa điểm làm việc|$))"
+  
+  # Trích xuất Yêu cầu và Quyền lợi
+  req_text <- str_extract(jd_text, req_pattern)
+  ben_text <- str_extract(jd_text, ben_pattern)
+  
+  # Mô tả công việc (desc) = Phần còn lại sau khi trừ đi Yêu cầu và Quyền lợi
+  desc_text <- jd_text
+  if (!is.na(req_text)) desc_text <- str_replace(desc_text, fixed(req_text), "")
+  if (!is.na(ben_text)) desc_text <- str_replace(desc_text, fixed(ben_text), "")
+  
+  # Trừ thêm các thông tin phụ (Thời gian, địa điểm) để mô tả sạch hơn
+  extra_pattern <- "(?is)(thời gian làm việc|địa điểm làm việc|thông tin việc làm|cách thức ứng tuyển).*?$"
+  desc_text <- str_replace(desc_text, extra_pattern, "")
+  
+  return(list(
+    desc = trimws(desc_text),
+    req = if(!is.na(req_text)) trimws(req_text) else NA_character_,
+    ben = if(!is.na(ben_text)) trimws(ben_text) else NA_character_
   ))
-
-  return(unique(skills))
 }
 
 # ==============================================================================
@@ -342,7 +329,7 @@ clean_and_load_data <- function() {
   # --- 1. Tìm thư mục data/raw/ -----------------------------------------------
   root <- get_project_root()
   raw_dir <- file.path(root, "data", "raw")
-
+  
   if (!dir.exists(raw_dir)) {
     stop("[DATA_CLEAN] Th\u01b0 m\u1ee5c data/raw/ kh\u00f4ng t\u1ed3n t\u1ea1i: ", raw_dir)
   }
@@ -421,10 +408,11 @@ clean_and_load_data <- function() {
   col_title      <- .find_col(raw_df, c("^title$", "tieu_de", "job_title", "vi_tri", "position"))
   col_company    <- .find_col(raw_df, c("^company$", "cong_ty", "employer", "nha_tuyen_dung"))
   col_salary     <- .find_col(raw_df, c("salary", "luong", "muc_luong"))
-  col_experience <- .find_col(raw_df, c("experience", "kinh_nghiem", "exp"))
   col_location   <- .find_col(raw_df, c("location", "dia_diem", "thanh_pho", "city", "noi_lam_viec"))
   col_url        <- .find_col(raw_df, c("^url$", "link", "href", "job_url"))
-  col_skills     <- .find_col(raw_df, c("skill", "ky_nang", "technology", "tech_stack"))
+  col_jd         <- .find_col(raw_df, c("job_description", "description", "jd", "mo_ta"))
+  col_req        <- .find_col(raw_df, c("requirements", "req", "yeu_cau"))
+  col_ben        <- .find_col(raw_df, c("benefits", "ben", "quyen_loi", "phuc_loi"))
 
   # Kiểm tra cột bắt buộc
   if (is.na(col_title) || is.na(col_company) || is.na(col_url)) {
@@ -433,16 +421,27 @@ clean_and_load_data <- function() {
   }
 
   # Xây dựng dataframe chuẩn
-  clean_df <- tibble(
-    title      = .standardize_text(raw_df[[col_title]]),
-    company    = .standardize_text(raw_df[[col_company]]),
+  clean_df <- data.frame(
+    title      = trimws(raw_df[[col_title]]),
+    company    = trimws(raw_df[[col_company]]),
     salary_raw = if (!is.na(col_salary)) raw_df[[col_salary]] else NA_character_,
-    exp_raw    = if (!is.na(col_experience)) raw_df[[col_experience]] else NA_character_,
     location_raw = if (!is.na(col_location)) raw_df[[col_location]] else NA_character_,
     url        = trimws(raw_df[[col_url]]),
-    skills_raw = if (!is.na(col_skills)) raw_df[[col_skills]] else NA_character_,
-    source     = raw_df$source
+    job_description = if (!is.na(col_jd)) raw_df[[col_jd]] else NA_character_,
+    requirements = if (!is.na(col_req)) raw_df[[col_req]] else NA_character_,
+    benefits = if (!is.na(col_ben)) raw_df[[col_ben]] else NA_character_,
+    source     = raw_df$source,
+    stringsAsFactors = FALSE
   )
+  
+  # Nếu cột yêu cầu hoặc quyền lợi hoàn toàn rỗng, ta fallback dùng hàm parse text (dành cho dữ liệu cũ)
+  if (all(is.na(clean_df$requirements) | clean_df$requirements == "")) {
+    message("[DATA_CLEAN] Không tìm thấy cột requirements từ CSV, tự động phân tách Job Description...")
+    parsed_jd <- lapply(clean_df$job_description, .parse_jd_sections)
+    clean_df$job_description <- sapply(parsed_jd, `[[`, "desc")
+    clean_df$requirements <- sapply(parsed_jd, `[[`, "req")
+    clean_df$benefits <- sapply(parsed_jd, `[[`, "ben")
+  }
 
   # --- 4. Parse salary ---------------------------------------------------------
   message("[DATA_CLEAN] \u0110ang ph\u00e2n t\u00edch l\u01b0\u01a1ng...")
@@ -455,8 +454,8 @@ clean_and_load_data <- function() {
   clean_df$location <- sapply(clean_df$location_raw, .normalize_city, USE.NAMES = FALSE)
 
   # --- 6. Classify experience ---------------------------------------------------
-  message("[DATA_CLEAN] \u0110ang ph\u00e2n lo\u1ea1i kinh nghi\u1ec7m...")
-  clean_df$experience_level <- sapply(clean_df$exp_raw, .classify_experience, USE.NAMES = FALSE)
+  message("[DATA_CLEAN] Đang phân loại kinh nghiệm...")
+  clean_df$experience_level <- sapply(clean_df$requirements, .classify_experience, USE.NAMES = FALSE)
 
   # --- 7. Deduplicate -----------------------------------------------------------
   n_before <- nrow(clean_df)
@@ -471,11 +470,28 @@ clean_and_load_data <- function() {
   message("[DATA_CLEAN] Sau l\u1ecdc URL h\u1ee3p l\u1ec7: ", nrow(clean_df), " b\u1ea3n ghi")
 
   # --- 8. Tách skills thành bảng riêng ------------------------------------------
-  message("[DATA_CLEAN] \u0110ang t\u00e1ch k\u1ef9 n\u0103ng...")
+  message("[DATA_CLEAN] \u0110ang t\u00e1ch k\u1ef9 n\u0103ng t\u1eeb nội dung...")
   skills_list <- lapply(seq_len(nrow(clean_df)), function(i) {
-    skills <- .split_skills(clean_df$skills_raw[i])
-    if (length(skills) > 0) {
-      tibble(row_idx = i, skill_name = skills)
+    text_to_search <- paste(clean_df$job_description[i], clean_df$requirements[i], sep = " ")
+    text_to_search <- str_to_lower(text_to_search)
+    
+    # Tìm các từ khóa IT nguyên vẹn (dùng regex boundary để tránh match nhầm như "html" trong "xhtml")
+    found_skills <- c()
+    for (s in IT_SKILLS_DICT) {
+      if (str_detect(text_to_search, regex(paste0("\\b", s, "\\b"), ignore_case = TRUE))) {
+        found_skills <- c(found_skills, s)
+      }
+    }
+    
+    # C++ và C# cần regex đặc biệt
+    if (str_detect(text_to_search, fixed("c++"))) found_skills <- c(found_skills, "c++")
+    if (str_detect(text_to_search, fixed("c#"))) found_skills <- c(found_skills, "c#")
+    if (str_detect(text_to_search, fixed(".net"))) found_skills <- c(found_skills, ".net")
+    
+    found_skills <- unique(found_skills)
+    
+    if (length(found_skills) > 0) {
+      tibble(row_idx = i, skill_name = found_skills)
     } else {
       NULL
     }
@@ -495,10 +511,15 @@ clean_and_load_data <- function() {
     dbExecute(con, "DELETE FROM jobs_clean")
     dbExecute(con, "DELETE FROM job_skills")
     dbExecute(con, "DELETE FROM market_trends")
+    
+    # Đặt lại bộ đếm AUTOINCREMENT về 0 (để id và job_id bắt đầu lại từ 1)
+    dbExecute(con, "DELETE FROM sqlite_sequence WHERE name='jobs_clean'")
+    dbExecute(con, "DELETE FROM sqlite_sequence WHERE name='job_skills'")
+    dbExecute(con, "DELETE FROM sqlite_sequence WHERE name='market_trends'")
 
     # UPSERT jobs_clean: dùng INSERT OR REPLACE (url là UNIQUE)
     jobs_insert <- clean_df %>%
-      select(title, company, salary_min, salary_max, experience_level, location, url, source) %>%
+      select(title, company, salary_min, salary_max, experience_level, location, url, source, job_description, requirements, benefits) %>%
       mutate(
         scraped_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
         updated_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S")
@@ -507,8 +528,8 @@ clean_and_load_data <- function() {
     # Chuẩn bị câu lệnh INSERT OR REPLACE
     insert_sql <- paste0(
       "INSERT OR REPLACE INTO jobs_clean ",
-      "(title, company, salary_min, salary_max, experience_level, location, url, source, scraped_at, updated_at) ",
-      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      "(title, company, salary_min, salary_max, experience_level, location, url, source, job_description, requirements, benefits, scraped_at, updated_at) ",
+      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
 
     stmt <- dbSendStatement(con, insert_sql)
@@ -521,7 +542,8 @@ clean_and_load_data <- function() {
           row$title, row$company,
           as.numeric(row$salary_min), as.numeric(row$salary_max),
           row$experience_level, row$location,
-          row$url, row$source,
+          row$url, row$source, 
+          row$job_description, row$requirements, row$benefits,
           row$scraped_at, row$updated_at
         ))
         n_inserted <- n_inserted + 1

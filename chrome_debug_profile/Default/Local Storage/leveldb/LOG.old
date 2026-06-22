@@ -1,5 +1,5 @@
-2026/06/17-15:31:12.619 2660 Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\Local Storage\leveldb/MANIFEST-000001
-2026/06/17-15:31:12.623 2660 Recovering log #93
-2026/06/17-15:31:12.623 2660 Level-0 table #96: started
-2026/06/17-15:31:12.625 2660 Level-0 table #96: 18457 bytes OK
-2026/06/17-15:31:12.627 2660 Delete type=0 #93
+2026/06/22-12:17:42.831 3024 Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\Local Storage\leveldb/MANIFEST-000001
+2026/06/22-12:17:42.835 3024 Recovering log #20
+2026/06/22-12:17:42.835 3024 Level-0 table #23: started
+2026/06/22-12:17:42.838 3024 Level-0 table #23: 17980 bytes OK
+2026/06/22-12:17:42.840 3024 Delete type=0 #20

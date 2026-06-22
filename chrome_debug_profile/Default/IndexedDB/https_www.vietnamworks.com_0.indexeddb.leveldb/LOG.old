@@ -1,3 +1,2 @@
-2026/06/17-15:23:13.631 1dbc Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\IndexedDB\https_www.vietnamworks.com_0.indexeddb.leveldb/MANIFEST-000001
-2026/06/17-15:23:13.632 1dbc Recovering log #3
-2026/06/17-15:23:13.633 1dbc Reusing old log D:\dsr-project\chrome_debug_profile\Default\IndexedDB\https_www.vietnamworks.com_0.indexeddb.leveldb/000003.log 
+2026/06/22-11:55:45.036 618c Creating DB D:\dsr-project\chrome_debug_profile\Default\IndexedDB\https_www.vietnamworks.com_0.indexeddb.leveldb since it was missing.
+2026/06/22-11:55:45.037 618c Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\IndexedDB\https_www.vietnamworks.com_0.indexeddb.leveldb/MANIFEST-000001

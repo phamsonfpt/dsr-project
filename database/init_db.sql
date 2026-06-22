@@ -20,7 +20,10 @@ CREATE TABLE IF NOT EXISTS jobs_clean (
     url             TEXT    UNIQUE NOT NULL,          -- Link gốc bài đăng (dùng làm key chống trùng)
     source          TEXT    DEFAULT NULL,            -- Nguồn dữ liệu: topcv / vietnamworks
     scraped_at      TEXT    DEFAULT (datetime('now')),-- Thời điểm cào dữ liệu
-    updated_at      TEXT    DEFAULT (datetime('now')) -- Thời điểm cập nhật gần nhất
+    updated_at      TEXT    DEFAULT (datetime('now')),-- Thời điểm cập nhật gần nhất
+    job_description TEXT    DEFAULT NULL,            -- Chi tiết: mô tả
+    requirements    TEXT    DEFAULT NULL,            -- Chi tiết: yêu cầu
+    benefits        TEXT    DEFAULT NULL             -- Chi tiết: quyền lợi
 );
 
 -- -----------------------------------------------------------

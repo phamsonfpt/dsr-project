@@ -6,15 +6,15 @@
         "date_filter": "Bật date_filter để lọc bài đăng theo ngày. start_date/end_date theo định dạng YYYY-MM-DD."
     },
     "topcv": {
-        "max_pages": 3,
+        "max_pages": 1,
         "date_filter": {
             "enabled": false,
-            "start_date": "2026-06-01",
-            "end_date": "2026-06-17"
+            "start_date": "2024-01-01",
+            "end_date": "2024-12-31"
         }
     },
     "vietnamworks": {
-        "max_pages": 2,
+        "max_pages": 1,
         "date_filter": {
             "enabled": false,
             "start_date": "2026-06-01",
