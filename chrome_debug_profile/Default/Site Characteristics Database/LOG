@@ -1,3 +1,2 @@
-2026/06/22-12:21:19.356 6e18 Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\Site Characteristics Database/MANIFEST-000001
-2026/06/22-12:21:19.356 6e18 Recovering log #3
-2026/06/22-12:21:19.357 6e18 Reusing old log D:\dsr-project\chrome_debug_profile\Default\Site Characteristics Database/000003.log 
+2026/06/24-14:41:24.240 1d40 Creating DB D:\dsr-project\chrome_debug_profile\Default\Site Characteristics Database since it was missing.
+2026/06/24-14:41:24.244 1d40 Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\Site Characteristics Database/MANIFEST-000001

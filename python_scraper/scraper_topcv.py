@@ -366,63 +366,118 @@ class TopCVScraper:
             "scraped_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "job_description": "",
             "requirements": "",
-            "benefits": ""
+            "benefits": "",
+            "level": ""
         }
 
     def _extract_job_details(self, url: str) -> dict:
         """
-        Mở tab mới, cào chi tiết Job Description và Experience từ trang chi tiết.
+        Mở tab mới, cào chi tiết Job Description, Requirements, Benefits
+        và Experience từ trang chi tiết TopCV.
         """
-        result = {"job_description": "", "requirements": "", "benefits": "", "experience": ""}
-        if not url: return result
-        
-        jd_selector = "css:.job-detail__information-detail, .job-description, .box-info-job"
+        result = {"job_description": "", "requirements": "", "benefits": "", "experience": "", "level": ""}
+        if not url:
+            return result
+
         exp_selector = self.detail_selectors.get("experience", "css:.job-detail__box--left, .job-detail-info")
         
         tab = None
         try:
             tab = self.page.new_tab(url)
-            time.sleep(random.uniform(0.5, 1.5))
-            
-            # 1. Lấy Job Description (Bao phủ cả trang chuẩn và trang Brand)
-            jd_ele = tab.ele(jd_selector, timeout=3)
-            if not jd_ele:
-                # Cứu cánh cho trang Brand TopCV có HTML tuỳ biến: Lấy toàn bộ văn bản của trang
-                jd_ele = tab.ele('tag:body', timeout=1)
-                
-            if jd_ele:
-                full_text = jd_ele.text
-                import re
-                
-                # Lọc bỏ rác UI của TopCV
-                full_text = re.sub(r'(?i)Chi tiết tuyển dụng.*?Gửi cho tôi việc làm tương tự', '', full_text, flags=re.DOTALL).strip()
-                full_text = re.sub(r'(?i)^(Chi tiết tuyển dụng)', '', full_text).strip()
-                
-                req_match = re.search(r'(?i)(?:yêu cầu ứng viên|yêu cầu[:\s]?)(.*?)(?=(?:quyền lợi|phúc lợi|những lợi ích|chuyên môn|địa điểm làm việc|$))', full_text, re.DOTALL)
-                ben_match = re.search(r'(?i)(?:quyền lợi|phúc lợi|những lợi ích)[:\s]?(.*?)(?=(?:địa điểm làm việc|chuyên môn|cách thức|$))', full_text, re.DOTALL)
-                jd_match = re.search(r'(?i)(?:mô tả công việc[:\s]?)?(.*?)(?=(?:yêu cầu|quyền lợi|chuyên môn|$))', full_text, re.DOTALL)
-                
-                jd_text = jd_match.group(1).strip() if jd_match else full_text.strip()
-                jd_text = re.sub(r'(?i)^mô tả công việc[:\s]*', '', jd_text).strip()
-                
-                result["job_description"] = jd_text
-                result["requirements"] = req_match.group(1).strip() if req_match else ""
-                result["benefits"] = ben_match.group(1).strip() if ben_match else ""
-                
-            # 2. Lấy Experience (TopCV hiển thị "Kinh nghiệm\nDưới 1 năm")
-            box = tab.ele(exp_selector, timeout=1)
-            if box:
-                lines = box.text.split('\n')
-                for i, line in enumerate(lines):
-                    if "Kinh nghiệm" in line and i + 1 < len(lines):
-                        result["experience"] = lines[i+1].strip()
+            import time
+            import random
+            time.sleep(random.uniform(1.0, 2.5))
+
+            # Lấy experience và level
+            try:
+                exp_text = ""
+                for selector in exp_selector.split(','):
+                    info_box = tab.ele(selector.strip(), timeout=2)
+                    if info_box:
+                        exp_text = info_box.text
                         break
+                
+                import re
+                exp_match = re.search(r'(?i)(?:kinh nghiệm|experience)[\s:]*([^\n]+)', exp_text)
+                if exp_match:
+                    result["experience"] = exp_match.group(1).strip()
+                    
+                lvl_match = re.search(r'(?i)(?:cấp bậc|level)[\s:]*([^\n]+)', exp_text)
+                if lvl_match:
+                    result["level"] = lvl_match.group(1).strip()
+            except Exception:
+                pass
+
+            # ── Helper: Cố gắng bóc tách nội dung theo Heading ──
+            def _find_section(heading_keywords):
+                for kw in heading_keywords:
+                    for tag in ['h2', 'h3', 'h4', 'strong', 'b']:
+                        try:
+                            heading = tab.ele(f"xpath://{tag}[contains(., '{kw}')]", timeout=1)
+                            if not heading:
+                                continue
+                            
+                            # Cố gắng lấy sibling kế tiếp
+                            nxt = heading.next()
+                            if nxt and nxt.text and len(nxt.text.strip()) > 10:
+                                return nxt.text.strip()
+                                
+                            # Nếu heading nằm trong một div bao bọc (phổ biến ở trang Brand)
+                            parent = heading.parent()
+                            if parent:
+                                parent_nxt = parent.next()
+                                if parent_nxt and parent_nxt.text and len(parent_nxt.text.strip()) > 10:
+                                    return parent_nxt.text.strip()
+                        except Exception:
+                            continue
+                return ""
+
+            # 1. Job Description
+            result["job_description"] = _find_section([
+                'Mô tả công việc', 'Mô Tả Công Việc', 'Job Description', 'Mô tả'
+            ])
+
+            # 2. Requirements
+            result["requirements"] = _find_section([
+                'Yêu cầu công việc', 'Yêu cầu ứng viên', 'Yêu Cầu Công Việc',
+                'Job Requirements', 'Requirements', 'Yêu cầu'
+            ])
+
+            # 3. Benefits
+            result["benefits"] = _find_section([
+                'Quyền lợi được hưởng', 'Phúc lợi', 'Quyền lợi', 'Những lợi ích', 'Lợi ích',
+                'Benefits', 'Tại sao bạn sẽ yêu thích', 'Why You Will Love'
+            ])
+
+            # Fallback 1: Trích xuất bằng regex tổng thể từ container lớn
+            if not result["job_description"] or not result["requirements"] or not result["benefits"]:
+                try:
+                    container = tab.ele('css:.job-detail__information-detail', timeout=1)
+                    if not container:
+                        container = tab.ele('css:.premium-job-detail__info', timeout=1) # Brand page container
+                    if container:
+                        full_text = container.text
+                        if full_text:
+                            # Xoá rác UI
+                            full_text = re.sub(r'(?i)(Chi tiết tuyển dụng|Gửi cho tôi việc làm tương tự.*|Lưu tin.*|Ứng tuyển ngay.*|Báo cáo tin.*|Hạn nộp hồ sơ.*)', '', full_text, flags=re.DOTALL).strip()
+                            
+                            # Cắt theo regex (tương tự scraper_vnw)
+                            desc_match = re.search(r'(?i)(?:mô tả công việc|job description)[\s:]*(.*?)(?=(?:yêu cầu ứng viên|yêu cầu công việc|job requirements|quyền lợi|phúc lợi|benefits)|$)', full_text, re.DOTALL)
+                            req_match = re.search(r'(?i)(?:yêu cầu ứng viên|yêu cầu công việc|job requirements)[\s:]*(.*?)(?=(?:quyền lợi|phúc lợi|benefits|địa điểm làm việc|cách thức)|$)', full_text, re.DOTALL)
+                            ben_match = re.search(r'(?i)(?:quyền lợi|phúc lợi|benefits)[\s:]*(.*?)(?=(?:địa điểm làm việc|thời gian làm việc|cách thức ứng tuyển|nộp hồ sơ)|$)', full_text, re.DOTALL)
+                            
+                            if not result["job_description"] and desc_match: result["job_description"] = desc_match.group(1).strip()
+                            if not result["requirements"] and req_match: result["requirements"] = req_match.group(1).strip()
+                            if not result["benefits"] and ben_match: result["benefits"] = ben_match.group(1).strip()
+                except Exception:
+                    pass
+
         except Exception as e:
-            logger.debug(f"  ⚠️ Lỗi lấy detail: {e}")
+            self.logger.error(f"Lỗi cào chi tiết TopCV URL {url}: {e}")
         finally:
             if tab:
                 tab.close()
-                
+
         return result
 
     # ─────────────── THU THẬP MỘT TRANG ────────────────────────────
@@ -442,7 +497,7 @@ class TopCVScraper:
 
         # Chờ phần tử đầu tiên xuất hiện (tối đa 10s)
         try:
-            self.page.wait.ele_loaded(self.selectors.get("job_card", ".job-item"), timeout=00)
+            self.page.wait.ele_loaded(self.selectors.get("job_card", ".job-item"), timeout=10)
         except Exception:
             pass
 

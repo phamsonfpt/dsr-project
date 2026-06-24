@@ -57,8 +57,7 @@ server <- function(input, output, session) {
     skill_gap          = NULL,
     user_skills_list   = NULL,
     required_skills    = NULL,
-    salary_market      = NULL,
-    alternative_jobs   = NULL
+    parsed_cv          = NULL
   )
 
   # --- Startup data loading ---
@@ -125,20 +124,7 @@ server <- function(input, output, session) {
     }, error = function(e) "—")
   })
 
-  # --- Value Box: Average Salary ---
-  output$vb_avg_salary <- renderText({
-    tryCatch({
-      con <- get_db()
-      on.exit(dbDisconnect(con), add = TRUE)
-      avg <- dbGetQuery(con,
-        "SELECT ROUND(AVG((COALESCE(salary_min,0) + COALESCE(salary_max,0)) / 2.0), 1) AS avg_sal
-         FROM jobs_clean
-         WHERE salary_min IS NOT NULL OR salary_max IS NOT NULL"
-      )$avg_sal
-      if (is.na(avg)) return("—")
-      paste0(format(round(avg, 1), big.mark = "."), " tr")
-    }, error = function(e) "—")
-  })
+  # Removed vb_avg_salary
 
   # --- Value Box: Top Skill ---
   output$vb_top_skill <- renderText({
@@ -210,88 +196,7 @@ server <- function(input, output, session) {
       config(displayModeBar = FALSE)
   })
 
-  # --- Chart: Salary by Role (Box Plot) ---
-  output$chart_salary_role <- renderPlotly({
-    df <- get_trend("salary_by_role")
-    validate(need(nrow(df) > 0, "Chưa có dữ liệu lương. Vui lòng chạy phân tích thị trường trước."))
-
-    # Parse extra_json to get Q1, Median, Q3 values
-    # extra_json expected format: {"q1": 10, "median": 15, "q3": 25, "min": 5, "max": 40}
-    parsed <- lapply(seq_len(nrow(df)), function(i) {
-      ej <- df$extra_json[i]
-      if (!is.null(ej) && !is.na(ej) && nchar(ej) > 0) {
-        tryCatch(fromJSON(ej), error = function(e) list())
-      } else {
-        list(median = df$value_metric[i])
-      }
-    })
-
-    # Build box plot data
-    role_names <- df$key_name
-    medians <- sapply(parsed, function(x) ifelse(is.null(x$median), 0, x$median))
-    q1s     <- sapply(parsed, function(x) ifelse(is.null(x$q1), 0, x$q1))
-    q3s     <- sapply(parsed, function(x) ifelse(is.null(x$q3), 0, x$q3))
-    mins    <- sapply(parsed, function(x) ifelse(is.null(x$min), 0, x$min))
-    maxs    <- sapply(parsed, function(x) ifelse(is.null(x$max), 0, x$max))
-
-    # Color palette
-    n_roles <- length(role_names)
-    colors <- colorRampPalette(c("#667eea", "#43e97b", "#f093fb", "#4facfe"))(n_roles)
-
-    p <- plot_ly(type = "bar")
-
-    # Use grouped bar chart to show salary range (min, median, max)
-    p <- plot_ly() %>%
-      add_trace(
-        x      = role_names, y = q1s,
-        type   = "bar", name = "Q1",
-        marker = list(color = "rgba(102,126,234,0.4)", cornerradius = 4),
-        hovertemplate = "<b>%{x}</b><br>Q1: %{y} triệu VND<extra></extra>"
-      ) %>%
-      add_trace(
-        x      = role_names, y = medians,
-        type   = "bar", name = "Trung vị",
-        marker = list(color = "rgba(102,126,234,0.8)", cornerradius = 4),
-        hovertemplate = "<b>%{x}</b><br>Trung vị: %{y} triệu VND<extra></extra>"
-      ) %>%
-      add_trace(
-        x      = role_names, y = q3s,
-        type   = "bar", name = "Q3",
-        marker = list(color = "rgba(118,75,162,0.7)", cornerradius = 4),
-        hovertemplate = "<b>%{x}</b><br>Q3: %{y} triệu VND<extra></extra>"
-      ) %>%
-      layout(
-        barmode       = "group",
-        xaxis = list(
-          title      = "",
-          color      = "#e8e8f0",
-          tickangle  = -30,
-          tickfont   = list(size = 11),
-          gridcolor  = "rgba(255,255,255,0.04)"
-        ),
-        yaxis = list(
-          title     = list(text = "Triệu VND", font = list(color = "#a0a0b8", size = 12)),
-          color     = "#a0a0b8",
-          gridcolor = "rgba(255,255,255,0.04)",
-          zerolinecolor = "rgba(255,255,255,0.04)"
-        ),
-        plot_bgcolor  = "rgba(0,0,0,0)",
-        paper_bgcolor = "rgba(0,0,0,0)",
-        margin        = list(l = 60, r = 20, t = 10, b = 80),
-        font          = list(family = "Inter, sans-serif", color = "#e8e8f0"),
-        legend        = list(
-          orientation = "h", x = 0.5, xanchor = "center", y = 1.05,
-          font = list(color = "#a0a0b8", size = 11)
-        ),
-        hoverlabel = list(
-          bgcolor = "#1a1a2e", bordercolor = "#667eea",
-          font = list(family = "Inter", color = "#e8e8f0")
-        )
-      ) %>%
-      config(displayModeBar = FALSE)
-
-    p
-  })
+  # Removed chart_salary_role
 
   # --- Chart: Jobs by Location (Donut) ---
   output$chart_location <- renderPlotly({
@@ -419,25 +324,50 @@ server <- function(input, output, session) {
   output$analysis_done <- reactive({ rv$analysis_done })
   outputOptions(output, "analysis_done", suspendWhenHidden = FALSE)
 
+
+  # --- Trích xuất CV khi upload ---
+  observeEvent(input$cv_upload, {
+    req(input$cv_upload)
+    
+    withProgress(message = "Đang đọc nội dung CV...", value = 0.5, {
+      tryCatch({
+        parsed <- parse_cv_features(input$cv_upload$datapath)
+        rv$parsed_cv <- parsed
+        showNotification("Đọc CV thành công!", type = "message")
+      }, error = function(e) {
+        showNotification(paste("Lỗi khi đọc file PDF:", conditionMessage(e)), type = "error")
+        rv$parsed_cv <- NULL
+      })
+    })
+  })
+
+  # --- Hiển thị Preview CV ---
+  output$cv_preview_ui <- renderUI({
+    req(rv$parsed_cv)
+    p <- rv$parsed_cv
+    
+    tags$div(
+      class = "glass-card animate-in",
+      style = "margin-top: 16px; padding: 12px; border-left: 4px solid #667eea; background: rgba(102,126,234,0.05);",
+      tags$h5(tags$i(class = "fas fa-check-circle", style = "color: #667eea; margin-right: 8px;"), "Thông tin đã trích xuất"),
+      tags$div(
+        style = "font-size: 0.9rem;",
+        tags$b("Vị trí: "), p$position, tags$br(),
+        tags$b("Kinh nghiệm: "), p$experience, tags$br(),
+        tags$b("Kỹ năng: "), paste(p$skills, collapse = ", ")
+      )
+    )
+  })
+
   # --- Main analysis event ---
   observeEvent(input$btn_analyze, {
     # Validate inputs
     validate(
-      need(length(input$user_skills) > 0, "Vui lòng chọn ít nhất 1 kỹ năng."),
-      need(input$user_exp != "",          "Vui lòng chọn cấp độ kinh nghiệm."),
-      need(
-        !is.null(input$user_position) && nchar(input$user_position) > 0,
-        "Vui lòng nhập vị trí mong muốn."
-      )
+      need(!is.null(rv$parsed_cv), "Vui lòng upload file CV (PDF) trước khi phân tích.")
     )
 
     # Collect user profile
-    user_profile <- list(
-      skills     = input$user_skills,
-      experience = input$user_exp,
-      position   = input$user_position,
-      salary     = input$user_salary
-    )
+    user_profile <- rv$parsed_cv
 
     # Show progress
     withProgress(message = "Đang phân tích hồ sơ...", value = 0, {
@@ -455,8 +385,7 @@ server <- function(input, output, session) {
 
         # Query jobs with their skills
         jobs_query <- "
-          SELECT j.job_id, j.title, j.company, j.salary_min, j.salary_max,
-                 j.experience_level, j.location, j.url,
+          SELECT j.job_id, j.title, j.company, j.experience, j.level, j.location, j.url,
                  GROUP_CONCAT(js.skill_name, ', ') AS skills_text
           FROM jobs_clean j
           LEFT JOIN job_skills js ON j.job_id = js.job_id
@@ -498,48 +427,7 @@ server <- function(input, output, session) {
           skill_gap_result <- compute_skill_gap_fallback(user_profile, matched_jobs, con)
         }
 
-        # --------------------------------------------------
-        # Step 4: Market salary for comparison
-        # --------------------------------------------------
-        salary_data <- dbGetQuery(con, "
-          SELECT value_metric, extra_json
-          FROM market_trends
-          WHERE category = 'salary_by_role'
-          ORDER BY value_metric DESC
-          LIMIT 1
-        ")
-
-        # Try to find salary for the target position specifically
-        salary_for_pos <- dbGetQuery(con, sprintf("
-          SELECT value_metric, extra_json
-          FROM market_trends
-          WHERE category = 'salary_by_role' AND key_name = '%s'
-        ", gsub("'", "''", user_profile$position)))
-
-        market_salary <- if (nrow(salary_for_pos) > 0) {
-          salary_for_pos$value_metric[1]
-        } else if (nrow(salary_data) > 0) {
-          salary_data$value_metric[1]
-        } else {
-          NA
-        }
-
-        # --------------------------------------------------
-        # Step 5: Alternative jobs if fit < 50%
-        # --------------------------------------------------
-        alt_jobs <- NULL
-        if (fit_score_val < 50) {
-          incProgress(0.1, detail = "Tìm vị trí thay thế...")
-          if (exists("find_alternative_jobs", mode = "function")) {
-            alt_jobs <- find_alternative_jobs(user_profile, jobs_df)
-          } else {
-            # Fallback: suggest top jobs from other roles
-            alt_jobs <- matched_jobs %>%
-              filter(title != user_profile$position) %>%
-              head(5)
-          }
-        }
-
+        # Removed step 4 & 5
         # --------------------------------------------------
         # Store results in reactiveValues
         # --------------------------------------------------
@@ -547,8 +435,6 @@ server <- function(input, output, session) {
         rv$matched_jobs     <- matched_jobs
         rv$skill_gap        <- skill_gap_result
         rv$user_skills_list <- user_profile$skills
-        rv$salary_market    <- market_salary
-        rv$alternative_jobs <- alt_jobs
         rv$analysis_done    <- TRUE
 
         incProgress(0.1, detail = "Hoàn tất!")
@@ -585,24 +471,10 @@ server <- function(input, output, session) {
       title_match <- if (grepl(tolower(profile$position), tolower(jobs_df$title[i]), fixed = TRUE)) 0.3 else 0
 
       # Experience match
-      exp_match <- if (!is.na(jobs_df$experience_level[i]) &&
-                       tolower(jobs_df$experience_level[i]) == tolower(profile$experience)) 0.15 else 0
+      exp_match <- if (!is.na(jobs_df$experience[i]) &&
+                       tolower(jobs_df$experience[i]) == tolower(profile$experience)) 0.2 else 0
 
-      # Salary range match
-      salary_match <- 0
-      if (!is.null(profile$salary) && !is.na(profile$salary)) {
-        s_min <- jobs_df$salary_min[i]
-        s_max <- jobs_df$salary_max[i]
-        if (!is.na(s_min) && !is.na(s_max) && s_max > 0) {
-          if (profile$salary >= s_min && profile$salary <= s_max) {
-            salary_match <- 0.1
-          } else if (profile$salary >= s_min * 0.7 && profile$salary <= s_max * 1.3) {
-            salary_match <- 0.05
-          }
-        }
-      }
-
-      round((skill_match * 0.55 + title_match + exp_match + salary_match) * 100, 1)
+      round((skill_match * 0.8 + exp_match * 0.2) * 100, 1)
     })
 
     jobs_df$fit_score <- pmin(scores, 100) # cap at 100
@@ -782,84 +654,7 @@ server <- function(input, output, session) {
     )
   })
 
-  # --- Salary Comparison Chart ---
-  output$chart_salary_compare <- renderPlotly({
-    req(rv$analysis_done)
-
-    user_salary   <- input$user_salary
-    market_salary <- rv$salary_market
-
-    # Build comparison data
-    labels <- c()
-    values <- c()
-    colors <- c()
-
-    if (!is.null(user_salary) && !is.na(user_salary) && user_salary > 0) {
-      labels <- c(labels, "Kỳ vọng của bạn")
-      values <- c(values, user_salary)
-      colors <- c(colors, "#667eea")
-    }
-
-    if (!is.null(market_salary) && !is.na(market_salary) && market_salary > 0) {
-      labels <- c(labels, "Trung vị thị trường")
-      values <- c(values, market_salary)
-      colors <- c(colors, "#43e97b")
-    }
-
-    # Also add top match salary if available
-    if (!is.null(rv$matched_jobs) && nrow(rv$matched_jobs) > 0) {
-      top_job <- rv$matched_jobs[1, ]
-      if (!is.na(top_job$salary_min) && !is.na(top_job$salary_max)) {
-        avg_top <- round((top_job$salary_min + top_job$salary_max) / 2, 1)
-        labels <- c(labels, "Việc phù hợp nhất")
-        values <- c(values, avg_top)
-        colors <- c(colors, "#f093fb")
-      }
-    }
-
-    validate(need(length(labels) > 0, "Không có dữ liệu lương để so sánh."))
-
-    df_salary <- data.frame(
-      label = factor(labels, levels = rev(labels)),
-      value = values,
-      stringsAsFactors = FALSE
-    )
-
-    plot_ly(
-      df_salary,
-      y           = ~label,
-      x           = ~value,
-      type        = "bar",
-      orientation = "h",
-      marker      = list(
-        color        = rev(colors),
-        line         = list(width = 0),
-        cornerradius = 8
-      ),
-      text        = ~paste0(value, " triệu VND"),
-      textposition = "outside",
-      textfont    = list(color = "#e8e8f0", size = 13, family = "Inter", weight = 600),
-      hovertemplate = "<b>%{y}</b><br>%{x} triệu VND<extra></extra>"
-    ) %>%
-      layout(
-        xaxis = list(
-          title     = list(text = "Triệu VND", font = list(color = "#a0a0b8", size = 11)),
-          color     = "#a0a0b8",
-          gridcolor = "rgba(255,255,255,0.04)",
-          zerolinecolor = "rgba(255,255,255,0.04)"
-        ),
-        yaxis = list(title = "", color = "#e8e8f0", tickfont = list(size = 12)),
-        plot_bgcolor  = "rgba(0,0,0,0)",
-        paper_bgcolor = "rgba(0,0,0,0)",
-        margin        = list(l = 140, r = 80, t = 10, b = 30),
-        font          = list(family = "Inter, sans-serif", color = "#e8e8f0"),
-        hoverlabel    = list(
-          bgcolor = "#1a1a2e", bordercolor = "#667eea",
-          font = list(family = "Inter", color = "#e8e8f0")
-        )
-      ) %>%
-      config(displayModeBar = FALSE)
-  })
+  # Removed chart_salary_compare
 
   # --- Job Matches DataTable ---
   output$table_job_matches <- DT::renderDataTable({
@@ -876,7 +671,7 @@ server <- function(input, output, session) {
         paste0(df$salary_min, " - ", df$salary_max),
         "Thương lượng"
       ),
-      `Kinh nghiệm`  = ifelse(is.na(df$experience_level), "—", df$experience_level),
+      `Kinh nghiệm`  = ifelse(is.na(df$experience), "—", df$experience),
       `Địa điểm`     = ifelse(is.na(df$location), "—", df$location),
       `Ứng tuyển`    = ifelse(
         !is.na(df$url) & nchar(df$url) > 0,

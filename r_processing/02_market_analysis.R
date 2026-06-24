@@ -131,51 +131,8 @@ run_market_analysis <- function() {
     }
 
     # =====================================================================
-    # b) salary_by_role: Lương trung vị theo vị trí công việc
+    # b) Removed salary_by_role
     # =====================================================================
-    message("\n[MARKET] (b) Ph\u00e2n t\u00edch salary_by_role...")
-
-    # Tính salary trung bình cho mỗi job (trung bình của min và max)
-    salary_jobs <- jobs_df %>%
-      filter(!is.na(salary_min) | !is.na(salary_max)) %>%
-      mutate(
-        salary_avg = case_when(
-          !is.na(salary_min) & !is.na(salary_max) ~ (salary_min + salary_max) / 2,
-          !is.na(salary_min) ~ salary_min,
-          TRUE ~ salary_max
-        )
-      )
-
-    if (nrow(salary_jobs) > 0) {
-      salary_by_role <- salary_jobs %>%
-        group_by(title) %>%
-        # Bỏ điều kiện filter(n() >= 2) để hiển thị được biểu đồ ngay cả khi dữ liệu mỏng (chỉ cào 1 trang)
-        summarise(
-          value_metric = median(salary_avg, na.rm = TRUE),
-          q1           = quantile(salary_avg, 0.25, na.rm = TRUE),
-          q3           = quantile(salary_avg, 0.75, na.rm = TRUE),
-          sal_min      = min(salary_avg, na.rm = TRUE),
-          sal_max      = max(salary_avg, na.rm = TRUE),
-          n_jobs       = n(),
-          .groups      = "drop"
-        ) %>%
-        arrange(desc(value_metric)) %>%
-        rename(key_name = title) %>%
-        rowwise() %>%
-        mutate(
-          extra_json = toJSON(
-            list(q1 = q1, q3 = q3, min = sal_min, max = sal_max, n = n_jobs),
-            auto_unbox = TRUE
-          )
-        ) %>%
-        ungroup() %>%
-        select(key_name, value_metric, extra_json) %>%
-        head(15) # Giới hạn hiển thị 15 vị trí có lương cao nhất để biểu đồ không quá tải
-
-      .upsert_trends(con, "salary_by_role", salary_by_role)
-    } else {
-      message("[MARKET]   Kh\u00f4ng \u0111\u1ee7 d\u1eef li\u1ec7u l\u01b0\u01a1ng.")
-    }
 
     # =====================================================================
     # c) jobs_by_location: Số lượng việc làm theo địa điểm
@@ -197,49 +154,17 @@ run_market_analysis <- function() {
     message("\n[MARKET] (d) Ph\u00e2n t\u00edch jobs_by_experience...")
 
     jobs_by_exp <- jobs_df %>%
-      filter(!is.na(experience_level), nchar(experience_level) > 0) %>%
-      group_by(experience_level) %>%
+      filter(!is.na(experience), nchar(experience) > 0) %>%
+      group_by(experience) %>%
       summarise(value_metric = n(), .groups = "drop") %>%
       arrange(desc(value_metric)) %>%
-      rename(key_name = experience_level)
+      rename(key_name = experience)
 
     .upsert_trends(con, "jobs_by_experience", jobs_by_exp)
 
     # =====================================================================
-    # e) salary_by_location: Lương trung vị theo địa điểm
+    # e) Removed salary_by_location
     # =====================================================================
-    message("\n[MARKET] (e) Ph\u00e2n t\u00edch salary_by_location...")
-
-    if (nrow(salary_jobs) > 0) {
-      salary_by_loc <- salary_jobs %>%
-        filter(!is.na(location), nchar(location) > 0) %>%
-        group_by(location) %>%
-        filter(n() >= 2) %>%  # Chỉ tính cho thành phố có ≥ 2 bài đăng
-        summarise(
-          value_metric = median(salary_avg, na.rm = TRUE),
-          q1           = quantile(salary_avg, 0.25, na.rm = TRUE),
-          q3           = quantile(salary_avg, 0.75, na.rm = TRUE),
-          sal_min      = min(salary_avg, na.rm = TRUE),
-          sal_max      = max(salary_avg, na.rm = TRUE),
-          n_jobs       = n(),
-          .groups      = "drop"
-        ) %>%
-        arrange(desc(value_metric)) %>%
-        rename(key_name = location) %>%
-        rowwise() %>%
-        mutate(
-          extra_json = toJSON(
-            list(q1 = q1, q3 = q3, min = sal_min, max = sal_max, n = n_jobs),
-            auto_unbox = TRUE
-          )
-        ) %>%
-        ungroup() %>%
-        select(key_name, value_metric, extra_json)
-
-      .upsert_trends(con, "salary_by_location", salary_by_loc)
-    } else {
-      message("[MARKET]   Kh\u00f4ng \u0111\u1ee7 d\u1eef li\u1ec7u l\u01b0\u01a1ng theo \u0111\u1ecba \u0111i\u1ec3m.")
-    }
 
     # Commit transaction
     dbCommit(con)

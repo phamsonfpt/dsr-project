@@ -77,13 +77,7 @@ ui <- fluidPage(
           tags$div(class = "vb-label", "Tổng việc làm")
         ),
 
-        # Average Salary
-        tags$div(
-          class = "value-box vb-green animate-in animate-delay-2",
-          tags$div(class = "vb-icon", tags$i(class = "fas fa-coins")),
-          tags$div(class = "vb-value", textOutput("vb_avg_salary", inline = TRUE)),
-          tags$div(class = "vb-label", "Lương trung bình")
-        ),
+        # Removed Average Salary
 
         # Top Skill
         tags$div(
@@ -118,17 +112,7 @@ ui <- fluidPage(
             shinycssloaders::withSpinner(type = 8, color = "#667eea", size = 0.5)
         ),
 
-        # Salary by Role
-        tags$div(
-          class = "glass-card animate-in animate-delay-2",
-          tags$div(
-            class = "card-title",
-            tags$i(class = "fas fa-money-bill-trend-up"),
-            "Phân bố lương theo vị trí"
-          ),
-          plotlyOutput("chart_salary_role", height = "420px") |>
-            shinycssloaders::withSpinner(type = 8, color = "#667eea", size = 0.5)
-        )
+        # Removed Salary by Role
       ),
 
       # Row 3: Location + Experience
@@ -183,79 +167,28 @@ ui <- fluidPage(
               "Hồ sơ ứng viên"
             ),
 
-            # Skills input (multi-select with autocomplete)
+            # CV Upload (PDF only)
             tags$div(
-              class = "form-group",
-              tags$label(`for` = "user_skills", "Kỹ năng của bạn"),
-              selectizeInput(
-                inputId  = "user_skills",
-                label    = NULL,
-                choices  = NULL, # populated from server
-                multiple = TRUE,
-                options  = list(
-                  placeholder  = "Gõ để tìm kỹ năng (Python, SQL, ...)",
-                  maxItems     = 20,
-                  plugins      = list("remove_button"),
-                  openOnFocus  = FALSE
-                )
-              )
+              class = "form-group cv-upload-group",
+              fileInput(
+                inputId = "cv_upload",
+                label   = tagList(icon("file-pdf"), " Kéo thả file PDF vào đây hoặc nhấn để chọn"),
+                accept  = c(".pdf"),
+                buttonLabel = "Chọn file...",
+                placeholder = "Chưa có file nào được chọn"
+              ),
+              tags$small(class = "text-muted", "Định dạng hỗ trợ: .pdf — tối đa 10MB")
             ),
 
-            # Experience Level
-            tags$div(
-              class = "form-group",
-              tags$label(`for` = "user_exp", "Cấp độ kinh nghiệm"),
-              selectInput(
-                inputId  = "user_exp",
-                label    = NULL,
-                choices  = c(
-                  "Chọn cấp độ..."  = "",
-                  "Fresher (0-1 năm)" = "Fresher",
-                  "Junior (1-3 năm)"  = "Junior",
-                  "Mid (3-5 năm)"     = "Mid",
-                  "Senior (5+ năm)"   = "Senior"
-                ),
-                selected = ""
-              )
-            ),
-
-            # Target Position
-            tags$div(
-              class = "form-group",
-              tags$label(`for` = "user_position", "Vị trí mong muốn"),
-              selectizeInput(
-                inputId  = "user_position",
-                label    = NULL,
-                choices  = NULL, # populated from server
-                multiple = FALSE,
-                options  = list(
-                  placeholder = "Ví dụ: Data Analyst, AI Engineer...",
-                  create      = TRUE,
-                  maxItems    = 1
-                )
-              )
-            ),
-
-            # Expected Salary
-            tags$div(
-              class = "form-group",
-              tags$label(`for` = "user_salary", "Mức lương kỳ vọng (triệu VND)"),
-              numericInput(
-                inputId = "user_salary",
-                label   = NULL,
-                value   = NULL,
-                min     = 1,
-                max     = 200,
-                step    = 1
-              )
-            ),
+            # Parsed CV Preview
+            uiOutput("cv_preview_ui"),
 
             tags$hr(class = "section-divider"),
 
             # Analyze Button
             actionButton(
               inputId = "btn_analyze",
-              label   = tagList(icon("bolt"), "Phân tích hồ sơ"),
+              label   = tagList(icon("bolt"), "Phân tích & Gợi ý"),
               class   = "btn-gradient"
             )
           )
@@ -305,17 +238,7 @@ ui <- fluidPage(
               uiOutput("skill_gap_ui")
             ),
 
-            # Salary Comparison
-            tags$div(
-              class = "glass-card animate-in",
-              style = "margin-top: 24px;",
-              tags$div(
-                class = "card-title",
-                tags$i(class = "fas fa-scale-balanced"),
-                "So sánh mức lương"
-              ),
-              plotlyOutput("chart_salary_compare", height = "200px")
-            ),
+            # Removed Salary Comparison
 
             # Job Matches Table
             tags$div(
@@ -330,7 +253,31 @@ ui <- fluidPage(
             ),
 
             # Alternative Jobs (if fit score < 50%)
-            uiOutput("alt_jobs_ui")
+            uiOutput("alt_jobs_ui"),
+
+            # Company Match Table
+            tags$div(
+              class = "glass-card animate-in job-table-wrapper",
+              style = "margin-top: 24px;",
+              tags$div(
+                class = "card-title",
+                tags$i(class = "fas fa-building"),
+                "Công ty đang tuyển phù hợp"
+              ),
+              DT::dataTableOutput("table_company_matches")
+            ),
+
+            # Company Target Table
+            tags$div(
+              class = "glass-card animate-in job-table-wrapper",
+              style = "margin-top: 24px;",
+              tags$div(
+                class = "card-title",
+                tags$i(class = "fas fa-bullseye"),
+                "Công ty tuyển vị trí bạn muốn"
+              ),
+              DT::dataTableOutput("table_company_target")
+            )
           )
         ) # end results-panel
       ) # end reco-layout

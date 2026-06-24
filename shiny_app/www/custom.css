@@ -861,3 +861,55 @@ table.dataTable tbody tr:hover td {
 .score-high   { color: #43e97b; }
 .score-medium { color: #fa8231; }
 .score-low    { color: #f5576c; }
+
+/* ---------- CV Upload Styles ---------- */
+.cv-upload-group .shiny-input-container {
+  width: 100% !important;
+}
+
+.cv-upload-group .input-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed rgba(102, 126, 234, 0.4);
+  border-radius: var(--radius-lg);
+  padding: 30px 20px;
+  background: rgba(102, 126, 234, 0.05);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.cv-upload-group .input-group:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.cv-upload-group .btn-file {
+  background: var(--gradient-main);
+  border: none;
+  border-radius: var(--radius-pill);
+  color: white;
+  padding: 8px 24px;
+  font-weight: 600;
+  margin-top: 15px;
+  transition: all 0.3s ease;
+}
+
+.cv-upload-group .btn-file:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.cv-upload-group input[type="text"] {
+  display: none; /* Hide the default text input showing file name */
+}
+
+/* ---------- CV Preview Card ---------- */
+.cv-preview-card {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  transition: transform 0.3s ease;
+}
+.cv-preview-card:hover {
+  transform: translateY(-2px);
+}

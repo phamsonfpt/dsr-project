@@ -410,94 +410,158 @@ class VietnamWorksScraper:
             "scraped_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "job_description": "",
             "requirements": "",
-            "benefits": ""
+            "benefits": "",
+            "level": ""
         }
 
     def _extract_job_details(self, url: str) -> dict:
         """
-        Mở tab mới, cào chi tiết Job Description và Experience từ trang chi tiết VietnamWorks.
+        Mở tab mới, cào chi tiết Job Description, Requirements, Benefits
+        và Experience từ trang chi tiết VietnamWorks.
+
+        Strategy ưu tiên:
+          1. Tìm heading h2/h3 theo text của từng section, lấy sibling content
+          2. Container fallback + regex
         """
-        result = {"job_description": "", "requirements": "", "benefits": "", "experience": ""}
-        if not url: return result
-        
-        jd_selector = self.detail_selectors.get("job_description", "css:.description, .job-detail-content, .job-description")
-        exp_selector = self.detail_selectors.get("experience", "css:.summary-item, span:contains('Năm Kinh Nghiệm')")
-        
+        result = {"job_description": "", "requirements": "", "benefits": "", "experience": "", "level": ""}
+        if not url:
+            return result
+
+        exp_selector = self.detail_selectors.get("experience", "css:.summary-item")
+
         tab = None
         try:
             tab = self.page.new_tab(url)
-            time.sleep(random.uniform(1.0, 2.5))
-            
-            # 1. Lấy Job Description
-            jd_ele = None
+            # Chờ trang load xong nội dung (đợi thẻ h2 xuất hiện)
             try:
-                h2 = tab.ele('t:h2@text():Mô tả', timeout=1) or tab.ele('t:h2@text():Job description', timeout=1) or tab.ele('t:h2@text():Job Description', timeout=1)
-                if h2:
-                    jd_ele = h2.parent().parent()
-            except:
-                pass
-            
-            full_text = ""
-            if jd_ele:
-                full_text = jd_ele.text
-            else:
-                jd_fallback = tab.ele(jd_selector, timeout=2)
-                if jd_fallback:
-                    full_text = jd_fallback.text
-                    
-            if full_text:
-                import re
-                # Lọc bỏ đoạn văn bản rác do tính năng AI Matching của VNW chèn vào
-                full_text = re.sub(r'(?i)mức độ phù hợp.*?ứng viên khác.*?(?:như thế nào\??|NULL)', '', full_text).strip()
-                
-                req_match = re.search(r'(?i)(yêu cầu công việc|yêu cầu ứng viên|job requirement)(.*?)(?=phúc lợi|quyền lợi|những lợi ích|lợi ích|công ty cung cấp những gì|benefits|$)', full_text, re.DOTALL)
-                ben_match = re.search(r'(?i)(phúc lợi|quyền lợi|những lợi ích|lợi ích|công ty cung cấp những gì|benefits)(.*)', full_text, re.DOTALL)
-                jd_match = re.search(r'^(.*?)(?=yêu cầu công việc|yêu cầu ứng viên|job requirement|$)', full_text, re.DOTALL)
-                
-                result["job_description"] = jd_match.group(1).strip() if jd_match else full_text.strip()
-                result["requirements"] = req_match.group(2).strip() if req_match else ""
-                result["benefits"] = ben_match.group(2).strip() if ben_match else ""
-                
-            # --- Fallback: Tìm block Phúc lợi độc lập nếu regex không thấy ---
-            if not result.get("benefits"):
-                b_ele = tab.ele('h2:phúc lợi', timeout=1) or tab.ele('h2:Quyền lợi', timeout=1) or tab.ele('h3:phúc lợi', timeout=1) or tab.ele('h2:Benefits', timeout=1) or tab.ele('h2:lợi ích', timeout=1) or tab.ele('h3:lợi ích', timeout=1) or tab.ele('h2:Những lợi ích', timeout=1)
-                if b_ele:
-                    try:
-                        ben_content = ""
-                        sibling = b_ele.next()
-                        if sibling:
-                            ben_content = sibling.text
-                        if not ben_content or len(ben_content) < 10:
-                            parent = b_ele.parent()
+                tab.wait.eles_loaded('tag:h2', timeout=5)
+            except Exception:
+                time.sleep(2)
+            time.sleep(random.uniform(1.0, 2.0)) # Thêm một chút delay tự nhiên
+
+            # ── Helper: Tìm nội dung section theo heading text ──
+            def _find_section(heading_keywords):
+                """Tìm heading h2/h3 chứa keyword, trả về text nội dung kế tiếp."""
+                for kw in heading_keywords:
+                    for tag in ['h2', 'h3']:
+                        try:
+                            # Dùng xpath tìm tag chứa text (tương đối mạnh mẽ và chính xác)
+                            heading = tab.ele(f"xpath://{tag}[contains(., '{kw}')]", timeout=1)
+                            if not heading:
+                                continue
+                            heading_text = (heading.text or "").strip()
+
+                            # ── Helper: Cắt bỏ AI matching junk ──
+                            def _clean_content(c):
+                                import re
+                                if not c: return ""
+                                c = re.sub(r'(?i)mức độ phù hợp.*?(?:như thế nào\??|NULL)', '', c, flags=re.DOTALL).strip()
+                                return c if len(c) > 10 else ""
+
+                            # Cách 1: Lấy sibling element kế tiếp
+                            nxt = heading.next()
+                            if nxt:
+                                c1 = _clean_content(nxt.text)
+                                if c1: return c1
+
+                            # Cách 2: Heading nằm trong wrapper div → lấy sibling của parent
+                            parent = heading.parent()
                             if parent:
-                                ben_content = parent.text
-                                if len(ben_content) < 10 and parent.parent():
-                                    ben_content = parent.parent().text
-                        ben_content = ben_content.replace(b_ele.text, "").strip()
-                        if ben_content:
-                            result["benefits"] = ben_content
-                    except Exception:
-                        pass
-                
-            # 2. Lấy Experience (VNW thường có thẻ span chứa "Kinh nghiệm" hoặc "Năm Kinh Nghiệm")
+                                parent_nxt = parent.next()
+                                if parent_nxt:
+                                    c2 = _clean_content(parent_nxt.text)
+                                    if c2: return c2
+
+                            # Cách 3: Lấy text của parent trừ heading
+                            if parent:
+                                parent_text = (parent.text or "").strip()
+                                content = parent_text.replace(heading_text, "", 1).strip()
+                                if content and len(content) > 10:
+                                    return content
+                        except Exception:
+                            continue
+                return ""
+
+            # 1. Job Description
+            result["job_description"] = _find_section([
+                'Mô tả công việc', 'Job Description', 'Mô tả'
+            ])
+
+            # 2. Requirements
+            result["requirements"] = _find_section([
+                'Yêu cầu công việc', 'Yêu cầu ứng viên',
+                'Job Requirements', 'Requirements', 'Yêu cầu'
+            ])
+
+            # 3. Benefits
+            result["benefits"] = _find_section([
+                'Các phúc lợi dành cho bạn', 'Phúc lợi', 'Quyền lợi', 'Những lợi ích', 'Lợi ích',
+                'Benefits', 'Tại sao bạn sẽ yêu thích', 'Why You Will Love'
+            ])
+
+            # ── Fallback: container + regex nếu chưa có job_description ──
+            if not result["job_description"] or not result["requirements"] or not result["benefits"]:
+                for sel in ['css:.job-detail__body', 'css:.description', 'css:.job-detail-content', 'css:.job-description', 'css:.brand-job-detail', 'css:.premium-job']:
+                    container = tab.ele(sel, timeout=1)
+                    if container and container.text and len(container.text.strip()) > 50:
+                        full_text = container.text.strip()
+                        # Loại bỏ rác UI (AI matching)
+                        full_text = re.sub(
+                            r'(?i)mức độ phù hợp.*?(?:như thế nào\??|NULL)', '', full_text, flags=re.DOTALL
+                        ).strip()
+
+                        jd_m = re.search(
+                            r'(?:mô tả công việc|job description)\s*(.*?)(?=yêu cầu|requirement|$)',
+                            full_text, re.DOTALL | re.IGNORECASE
+                        )
+                        req_m = re.search(
+                            r'(?:yêu cầu công việc|yêu cầu ứng viên|requirement)\s*(.*?)(?=phúc lợi|quyền lợi|lợi ích|benefit|$)',
+                            full_text, re.DOTALL | re.IGNORECASE
+                        )
+                        ben_m = re.search(
+                            r'(?:phúc lợi|quyền lợi|lợi ích|benefit)\s*(.*?)(?=địa điểm|thông tin|cách thức|$)',
+                            full_text, re.DOTALL | re.IGNORECASE
+                        )
+
+                        if not result["job_description"] and jd_m: result["job_description"] = jd_m.group(1).strip()
+                        if not result["requirements"] and req_m: result["requirements"] = req_m.group(1).strip()
+                        if not result["benefits"] and ben_m: result["benefits"] = ben_m.group(1).strip()
+                        ben_m = re.search(
+                            r'(?:phúc lợi|quyền lợi|lợi ích|benefit)\s*(.*)',
+                            full_text, re.DOTALL | re.IGNORECASE
+                        )
+
+                        if jd_m:
+                            result["job_description"] = jd_m.group(1).strip()
+                        if req_m and not result["requirements"]:
+                            result["requirements"] = req_m.group(1).strip()
+                        if ben_m and not result["benefits"]:
+                            result["benefits"] = ben_m.group(1).strip()
+                        break
+
+            # ── Lấy Experience và Level ──
             exp_ele = tab.ele(exp_selector, timeout=1)
             if exp_ele:
-                # Nếu thẻ là summary-item, text sẽ kiểu "Kinh nghiệm\n1 - 3 năm"
-                parent = exp_ele.parent() if "Năm Kinh Nghiệm" in exp_ele.text else exp_ele
-                lines = parent.text.split('\n')
+                parent = exp_ele.parent() if ("Năm Kinh Nghiệm" in (exp_ele.text or "") or "Cấp bậc" in (exp_ele.text or "")) else exp_ele
+                lines = (parent.text or "").split('\n')
                 for i, line in enumerate(lines):
                     if "Kinh nghiệm" in line or "Năm Kinh Nghiệm" in line:
                         if i + 1 < len(lines):
-                            result["experience"] = lines[i+1].strip()
+                            result["experience"] = lines[i + 1].strip()
                         else:
                             result["experience"] = line.strip()
-                        break
+                    if "Cấp Bậc" in line or "Cấp bậc" in line or "Level" in line:
+                        if i + 1 < len(lines):
+                            result["level"] = lines[i + 1].strip()
+                        else:
+                            result["level"] = line.strip()
+
         except Exception as e:
-            logger.debug(f"  ⚠️ Lỗi lấy detail: {e}")
+            logger.debug("  ⚠️ Lỗi lấy detail: %s", e)
         finally:
             if tab:
                 tab.close()
-                
+
         return result
 
     # ─────────────── ĐÓNG POPUP/BANNER ──────────────────────────────

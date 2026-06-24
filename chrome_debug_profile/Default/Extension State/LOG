@@ -1,3 +1,2 @@
-2026/06/22-12:21:19.534 76b0 Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\Extension State/MANIFEST-000001
-2026/06/22-12:21:19.534 76b0 Recovering log #3
-2026/06/22-12:21:19.535 76b0 Reusing old log D:\dsr-project\chrome_debug_profile\Default\Extension State/000003.log 
+2026/06/24-14:41:24.350 6a94 Creating DB D:\dsr-project\chrome_debug_profile\Default\Extension State since it was missing.
+2026/06/24-14:41:24.352 6a94 Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\Extension State/MANIFEST-000001

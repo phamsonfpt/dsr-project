@@ -1,3 +1,2 @@
-2026/06/22-12:21:19.350 5c48 Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\Sync Data\LevelDB/MANIFEST-000001
-2026/06/22-12:21:19.351 5c48 Recovering log #3
-2026/06/22-12:21:19.351 5c48 Reusing old log D:\dsr-project\chrome_debug_profile\Default\Sync Data\LevelDB/000003.log 
+2026/06/24-14:41:24.233 5e28 Creating DB D:\dsr-project\chrome_debug_profile\Default\Sync Data\LevelDB since it was missing.
+2026/06/24-14:41:24.237 5e28 Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\Sync Data\LevelDB/MANIFEST-000001

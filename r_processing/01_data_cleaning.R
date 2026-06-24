@@ -123,91 +123,7 @@ library(tidyr)
   return(str_to_title(trimws(city_raw)))
 }
 
-# ==============================================================================
-# Hàm phân tích lương từ chuỗi text
-# Trả về list(salary_min, salary_max) đơn vị: triệu VND
-# ==============================================================================
-.parse_salary <- function(salary_text) {
-  result <- list(salary_min = NA_real_, salary_max = NA_real_)
-
-  if (is.na(salary_text) || !nzchar(trimws(salary_text))) return(result)
-
-  s <- str_to_lower(trimws(salary_text))
-
-  # Trường hợp "thỏa thuận" / "negotiable" / "cạnh tranh" → NA
-  if (str_detect(s, "th\u1ecfa thu\u1eadn|negotiable|c\u1ea1nh tranh|competitive|theo n\u0103ng l\u1ef1c")) {
-    return(result)
-  }
-
-  # Phát hiện đơn vị USD
-  is_usd <- str_detect(s, "usd|\\$")
-  usd_to_trieu <- 25000 / 1e6  # 1 USD = 0.025 triệu VND
-
-  # --- Pattern 1: Khoảng lương "10 - 15 triệu" hoặc "10-15tr" hoặc "$1000 - $2000"
-  range_match <- str_match(s, "([\\d.,]+)\\s*[-–~đến to]\\s*([\\d.,]+)")
-  if (!is.na(range_match[1, 1])) {
-    v1 <- as.numeric(str_replace_all(range_match[1, 2], ",", ""))
-    v2 <- as.numeric(str_replace_all(range_match[1, 3], ",", ""))
-
-    if (is_usd) {
-      # USD → triệu VND
-      result$salary_min <- v1 * usd_to_trieu
-      result$salary_max <- v2 * usd_to_trieu
-    } else if (v1 > 100) {
-      # Có thể là VND đầy đủ (ví dụ 10000000) → chuyển triệu
-      result$salary_min <- v1 / 1e6
-      result$salary_max <- v2 / 1e6
-    } else {
-      # Đơn vị triệu VND
-      result$salary_min <- v1
-      result$salary_max <- v2
-    }
-    return(result)
-  }
-
-  # --- Pattern 2: "Trên X triệu" / "Từ X triệu" / "Tối thiểu X"
-  above_match <- str_match(s, "(tr\u00ean|t\u1eeb|t\u1ed1i thi\u1ec3u|trên|tu|above|from|min)\\s*[:]?\\s*([\\d.,]+)")
-  if (!is.na(above_match[1, 1])) {
-    v <- as.numeric(str_replace_all(above_match[1, 3], ",", ""))
-    if (is_usd) v <- v * usd_to_trieu
-    else if (v > 100) v <- v / 1e6
-    result$salary_min <- v
-    return(result)
-  }
-
-  # --- Pattern 3: "Đến X triệu" / "Tối đa X" / "Dưới X"
-  below_match <- str_match(s, "(\u0111\u1ebfn|t\u1ed1i \u0111a|d\u01b0\u1edbi|den|up to|max|to)\\s*[:]?\\s*([\\d.,]+)")
-  if (!is.na(below_match[1, 1])) {
-    v <- as.numeric(str_replace_all(below_match[1, 3], ",", ""))
-    if (is_usd) v <- v * usd_to_trieu
-    else if (v > 100) v <- v / 1e6
-    result$salary_max <- v
-    return(result)
-  }
-
-  # --- Pattern 4: Chỉ có số đơn lẻ (ví dụ "15 triệu")
-  single_match <- str_match(s, "([\\d.,]+)\\s*(tri\u1ec7u|tr|million|m)")
-  if (!is.na(single_match[1, 1])) {
-    v <- as.numeric(str_replace_all(single_match[1, 2], ",", ""))
-    if (is_usd) v <- v * usd_to_trieu
-    result$salary_min <- v
-    result$salary_max <- v
-    return(result)
-  }
-
-  # --- Pattern 5: Chỉ có số USD đơn lẻ
-  if (is_usd) {
-    usd_match <- str_match(s, "([\\d.,]+)")
-    if (!is.na(usd_match[1, 1])) {
-      v <- as.numeric(str_replace_all(usd_match[1, 2], ",", ""))
-      result$salary_min <- v * usd_to_trieu
-      result$salary_max <- v * usd_to_trieu
-      return(result)
-    }
-  }
-
-  return(result)
-}
+# Removed .parse_salary()
 
 # ==============================================================================
 # Hàm phân loại kinh nghiệm
@@ -407,29 +323,31 @@ clean_and_load_data <- function() {
 
   col_title      <- .find_col(raw_df, c("^title$", "tieu_de", "job_title", "vi_tri", "position"))
   col_company    <- .find_col(raw_df, c("^company$", "cong_ty", "employer", "nha_tuyen_dung"))
-  col_salary     <- .find_col(raw_df, c("salary", "luong", "muc_luong"))
   col_location   <- .find_col(raw_df, c("location", "dia_diem", "thanh_pho", "city", "noi_lam_viec"))
   col_url        <- .find_col(raw_df, c("^url$", "link", "href", "job_url"))
   col_jd         <- .find_col(raw_df, c("job_description", "description", "jd", "mo_ta"))
   col_req        <- .find_col(raw_df, c("requirements", "req", "yeu_cau"))
   col_ben        <- .find_col(raw_df, c("benefits", "ben", "quyen_loi", "phuc_loi"))
+  col_level      <- .find_col(raw_df, c("^level$", "cap_bac"))
+  col_exp        <- .find_col(raw_df, c("experience", "kinh_nghiem"))
 
   # Kiểm tra cột bắt buộc
   if (is.na(col_title) || is.na(col_company) || is.na(col_url)) {
-    stop("[DATA_CLEAN] Thi\u1ebfu c\u1ed9t b\u1eaft bu\u1ed9c (title, company, url). ",
-         "C\u00e1c c\u1ed9t hi\u1ec7n c\u00f3: ", paste(names(raw_df), collapse = ", "))
+    stop("[DATA_CLEAN] Thiếu cột bắt buộc (title, company, url). ",
+         "Các cột hiện có: ", paste(names(raw_df), collapse = ", "))
   }
 
   # Xây dựng dataframe chuẩn
   clean_df <- data.frame(
     title      = trimws(raw_df[[col_title]]),
     company    = trimws(raw_df[[col_company]]),
-    salary_raw = if (!is.na(col_salary)) raw_df[[col_salary]] else NA_character_,
     location_raw = if (!is.na(col_location)) raw_df[[col_location]] else NA_character_,
     url        = trimws(raw_df[[col_url]]),
+    experience = if (!is.na(col_exp)) raw_df[[col_exp]] else NA_character_,
     job_description = if (!is.na(col_jd)) raw_df[[col_jd]] else NA_character_,
     requirements = if (!is.na(col_req)) raw_df[[col_req]] else NA_character_,
     benefits = if (!is.na(col_ben)) raw_df[[col_ben]] else NA_character_,
+    level = if (!is.na(col_level)) raw_df[[col_level]] else NA_character_,
     source     = raw_df$source,
     stringsAsFactors = FALSE
   )
@@ -443,19 +361,17 @@ clean_and_load_data <- function() {
     clean_df$benefits <- sapply(parsed_jd, `[[`, "ben")
   }
 
-  # --- 4. Parse salary ---------------------------------------------------------
-  message("[DATA_CLEAN] \u0110ang ph\u00e2n t\u00edch l\u01b0\u01a1ng...")
-  salary_parsed <- lapply(clean_df$salary_raw, .parse_salary)
-  clean_df$salary_min <- sapply(salary_parsed, `[[`, "salary_min")
-  clean_df$salary_max <- sapply(salary_parsed, `[[`, "salary_max")
+  # Cập nhật experience nếu thiếu
+  if (all(is.na(clean_df$experience) | clean_df$experience == "")) {
+    clean_df$experience <- sapply(clean_df$requirements, .classify_experience, USE.NAMES = FALSE)
+  }
 
-  # --- 5. Normalize location ----------------------------------------------------
-  message("[DATA_CLEAN] \u0110ang chu\u1ea9n h\u00f3a \u0111\u1ecba \u0111i\u1ec3m...")
+  # --- 4. Normalize location ----------------------------------------------------
+  message("[DATA_CLEAN] Đang chuẩn hóa địa điểm...")
   clean_df$location <- sapply(clean_df$location_raw, .normalize_city, USE.NAMES = FALSE)
 
-  # --- 6. Classify experience ---------------------------------------------------
-  message("[DATA_CLEAN] Đang phân loại kinh nghiệm...")
-  clean_df$experience_level <- sapply(clean_df$requirements, .classify_experience, USE.NAMES = FALSE)
+  # --- 5. Classify experience fallback ------------------------------------------
+  # Đã xử lý ở trên, ta không cần ghi đè bằng phân loại cũ nữa unless requested.
 
   # --- 7. Deduplicate -----------------------------------------------------------
   n_before <- nrow(clean_df)
@@ -519,7 +435,7 @@ clean_and_load_data <- function() {
 
     # UPSERT jobs_clean: dùng INSERT OR REPLACE (url là UNIQUE)
     jobs_insert <- clean_df %>%
-      select(title, company, salary_min, salary_max, experience_level, location, url, source, job_description, requirements, benefits) %>%
+      select(title, company, location, url, source, experience, job_description, requirements, benefits, level) %>%
       mutate(
         scraped_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
         updated_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S")
@@ -528,8 +444,8 @@ clean_and_load_data <- function() {
     # Chuẩn bị câu lệnh INSERT OR REPLACE
     insert_sql <- paste0(
       "INSERT OR REPLACE INTO jobs_clean ",
-      "(title, company, salary_min, salary_max, experience_level, location, url, source, job_description, requirements, benefits, scraped_at, updated_at) ",
-      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      "(title, company, location, url, source, experience, job_description, requirements, benefits, level, scraped_at, updated_at) ",
+      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
 
     stmt <- dbSendStatement(con, insert_sql)
@@ -539,11 +455,9 @@ clean_and_load_data <- function() {
       row <- jobs_insert[i, ]
       tryCatch({
         dbBind(stmt, list(
-          row$title, row$company,
-          as.numeric(row$salary_min), as.numeric(row$salary_max),
-          row$experience_level, row$location,
-          row$url, row$source, 
-          row$job_description, row$requirements, row$benefits,
+          row$title, row$company, row$location,
+          row$url, row$source, row$experience,
+          row$job_description, row$requirements, row$benefits, row$level,
           row$scraped_at, row$updated_at
         ))
         n_inserted <- n_inserted + 1

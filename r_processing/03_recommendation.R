@@ -125,9 +125,9 @@ build_tfidf_model <- function(con) {
     left_join(skills_agg, by = "job_id") %>%
     mutate(
       skills_text = ifelse(is.na(skills_text), "", skills_text),
-      experience_level = ifelse(is.na(experience_level), "", experience_level),
+      experience = ifelse(is.na(experience), "", experience),
       # Tạo document: kết hợp title + skills + experience
-      document = paste(title, skills_text, experience_level)
+      document = paste(title, skills_text, experience, level)
     )
 
   message("[RECOMMEND]   \u0110\u00e3 t\u1ea1o corpus: ", nrow(jobs_corpus), " t\u00e0i li\u1ec7u")
@@ -179,8 +179,7 @@ build_tfidf_model <- function(con) {
     model_strategy = model_strategy,   # "machine_learning" | "deep_learning"
     n_jobs         = n_jobs,
     jobs_meta  = jobs_corpus %>%
-      select(job_id, title, company, salary_min, salary_max,
-             experience_level, location, url, source)
+      select(job_id, title, company, experience, location, url, source, level)
   )
 
   return(model)
@@ -226,8 +225,9 @@ build_tfidf_model <- function(con) {
 #   model                : output từ build_tfidf_model()
 #   con                  : kết nối DB (dùng nếu cần truy vấn thêm)
 #
-# Trả về: data.frame với job_id, title, company, fit_score_pct, salary_min,
-#         salary_max, url — sắp xếp theo fit_score giảm dần
+#
+# Trả về: data.frame với job_id, title, company, fit_score_pct, experience,
+#         level, location, url — sắp xếp theo fit_score giảm dần
 # ==============================================================================
 compute_fit_score <- function(candidate_skills, candidate_experience,
                                target_title = NULL, model, con) {
@@ -272,7 +272,7 @@ compute_fit_score <- function(candidate_skills, candidate_experience,
   # --- 5. Sắp xếp và trả về -------------------------------------------------
   results <- results %>%
     arrange(desc(fit_score_pct)) %>%
-    select(job_id, title, company, fit_score_pct, salary_min, salary_max, location, url)
+    select(job_id, title, company, fit_score_pct, experience, level, location, url)
 
   message("[RECOMMEND] \u2705 T\u00ecm th\u1ea5y ", nrow(results), " vi\u1ec7c l\u00e0m ph\u00f9 h\u1ee3p.")
 
@@ -288,84 +288,7 @@ compute_fit_score <- function(candidate_skills, candidate_experience,
   return(results)
 }
 
-# ==============================================================================
-# find_alternative_jobs()
-# Gợi ý việc làm thay thế dùng K-Means clustering
-#
-# Tham số:
-#   candidate_vector : TF-IDF vector của ứng viên (1 x p sparse matrix)
-#   model           : output từ build_tfidf_model()
-#   n_clusters      : số cluster K-Means (mặc định 5)
-#   top_n           : số kết quả trả về (mặc định 10)
-#
-# Trả về: data.frame jobs từ cluster gần nhất + các cluster lân cận
-# ==============================================================================
-find_alternative_jobs <- function(candidate_vector, model, n_clusters = 5, top_n = 10) {
-  message("\n[RECOMMEND] \u0110ang t\u00ecm vi\u1ec7c l\u00e0m thay th\u1ebf b\u1eb1ng K-Means...")
-
-  dtm_dense <- as.matrix(model$dtm)
-
-  # Điều chỉnh n_clusters nếu số job ít hơn
-  n_clusters <- min(n_clusters, nrow(dtm_dense))
-  if (n_clusters < 2) {
-    message("[RECOMMEND]   Kh\u00f4ng \u0111\u1ee7 d\u1eef li\u1ec7u \u0111\u1ec3 clustering. Tr\u1ea3 v\u1ec1 t\u1ea5t c\u1ea3.")
-    return(head(model$jobs_meta, top_n))
-  }
-
-  # --- 1. K-Means clustering trên tất cả jobs --------------------------------
-  set.seed(42)  # Đảm bảo kết quả tái lập
-  km <- tryCatch(
-    kmeans(dtm_dense, centers = n_clusters, nstart = 10, iter.max = 100),
-    error = function(e) {
-      message("[RECOMMEND]   L\u1ed7i K-Means: ", conditionMessage(e))
-      return(NULL)
-    }
-  )
-
-  if (is.null(km)) {
-    return(head(model$jobs_meta, top_n))
-  }
-
-  message("[RECOMMEND]   \u0110\u00e3 t\u1ea1o ", n_clusters, " cluster, size: ",
-          paste(km$size, collapse = ", "))
-
-  # --- 2. Tìm cluster gần ứng viên nhất -------------------------------------
-  cand_dense <- as.numeric(candidate_vector)
-  # Nếu cand_dense ngắn hơn, pad thêm 0
-  if (length(cand_dense) < ncol(km$centers)) {
-    cand_dense <- c(cand_dense, rep(0, ncol(km$centers) - length(cand_dense)))
-  } else if (length(cand_dense) > ncol(km$centers)) {
-    cand_dense <- cand_dense[seq_len(ncol(km$centers))]
-  }
-
-  # Khoảng cách Euclidean tới từng centroid
-  dists <- apply(km$centers, 1, function(center) {
-    sqrt(sum((cand_dense - center)^2))
-  })
-
-  # Sắp xếp cluster theo khoảng cách
-  cluster_order <- order(dists)
-  nearest_cluster <- cluster_order[1]
-  message("[RECOMMEND]   Cluster g\u1ea7n nh\u1ea5t: ", nearest_cluster,
-          " (kho\u1ea3ng c\u00e1ch: ", round(dists[nearest_cluster], 4), ")")
-
-  # --- 3. Lấy jobs từ cluster gần nhất + lân cận ----------------------------
-  # Ưu tiên cluster gần nhất, rồi đến các cluster lân cận
-  selected_jobs <- c()
-
-  for (cl in cluster_order) {
-    cluster_indices <- which(km$cluster == cl)
-    selected_jobs <- c(selected_jobs, cluster_indices)
-    if (length(selected_jobs) >= top_n * 2) break  # Lấy dư ra để lọc
-  }
-
-  # Lấy metadata và trả về
-  alt_results <- model$jobs_meta[selected_jobs, ] %>%
-    head(top_n)
-
-  message("[RECOMMEND] \u2705 Tr\u1ea3 v\u1ec1 ", nrow(alt_results), " vi\u1ec7c l\u00e0m thay th\u1ebf.")
-  return(alt_results)
-}
+# Removed find_alternative_jobs
 
 # ==============================================================================
 # analyze_skill_gap()
@@ -481,25 +404,12 @@ recommend_for_candidate <- function(candidate_skills, candidate_experience,
       gap_analysis <- list()
     }
 
-    # Bước 5: Tìm việc thay thế
-    it_cand <- itoken(
-      paste(target_title, paste(candidate_skills, collapse = " "), candidate_experience),
-      tokenizer   = .simple_tokenizer,
-      ids         = "candidate",
-      progressbar = FALSE
-    )
-    cand_dtm <- create_dtm(it_cand, model$vectorizer)
-    cand_tfidf <- transform(cand_dtm, model$tfidf)
-
-    alternatives <- find_alternative_jobs(cand_tfidf, model, n_clusters = 5, top_n = top_n)
-
     message("\n", strrep("=", 60))
     message("[RECOMMEND] \u2705 Ho\u00e0n t\u1ea5t pipeline g\u1ee3i \u00fd!")
     message(strrep("=", 60))
 
     return(list(
       top_matches  = top_jobs,
-      alternatives = alternatives,
       skill_gaps   = gap_analysis
     ))
 
