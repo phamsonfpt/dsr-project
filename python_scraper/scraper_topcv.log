@@ -1,34 +1,11 @@
-11:52:16 │ INFO     │ ✅ Đọc cấu hình từ D:\dsr-project\python_scraper\config.json thành công
-11:52:16 │ INFO     │ ✅ Đã ghi đè cấu hình từ user_settings.json
-11:52:16 │ INFO     │ ════════════════════════════════════════════════════════════
-11:52:16 │ INFO     │ 🏁 BẮT ĐẦU THU THẬP DỮ LIỆU TỪ TOPCV.VN
-11:52:16 │ INFO     │    URL: https://www.topcv.vn/tim-viec-lam-it-phan-mem-c10026
-11:52:16 │ INFO     │    Số trang tối đa: 1
-11:52:16 │ INFO     │ ════════════════════════════════════════════════════════════
-11:52:17 │ INFO     │ 🚀 Trình duyệt đã khởi tạo (headless=False)
-11:52:17 │ INFO     │ 🌐 Đang truy cập https://www.topcv.vn/tim-viec-lam-it-phan-mem-c10026 ...
-11:52:32 │ INFO     │ ────────────────────────────────────────
-11:52:32 │ INFO     │ 📖 Đang xử lý trang 1/1 ...
-11:55:40 │ INFO     │ 📄 Trang 1/1: Thu thập 50/50 việc làm (tổng cộng: 50)
-11:55:40 │ INFO     │ 💾 Đã lưu 50 việc làm → D:\dsr-project\data\raw\topcv_jobs_raw.csv
-11:55:41 │ INFO     │ 🔒 Trình duyệt đã đóng
-11:55:41 │ INFO     │ ════════════════════════════════════════════════════════════
-11:55:41 │ INFO     │ ✅ HOÀN THÀNH: 50 việc làm trong 204.4 giây
-11:55:41 │ INFO     │ ════════════════════════════════════════════════════════════
-12:17:42 │ INFO     │ ✅ Đọc cấu hình từ D:\dsr-project\python_scraper\config.json thành công
-12:17:42 │ INFO     │ ✅ Đã ghi đè cấu hình từ user_settings.json
-12:17:42 │ INFO     │ ════════════════════════════════════════════════════════════
-12:17:42 │ INFO     │ 🏁 BẮT ĐẦU THU THẬP DỮ LIỆU TỪ TOPCV.VN
-12:17:42 │ INFO     │    URL: https://www.topcv.vn/tim-viec-lam-it-phan-mem-c10026
-12:17:42 │ INFO     │    Số trang tối đa: 1
-12:17:42 │ INFO     │ ════════════════════════════════════════════════════════════
-12:17:43 │ INFO     │ 🚀 Trình duyệt đã khởi tạo (headless=False)
-12:17:43 │ INFO     │ 🌐 Đang truy cập https://www.topcv.vn/tim-viec-lam-it-phan-mem-c10026 ...
-12:18:05 │ INFO     │ ────────────────────────────────────────
-12:18:05 │ INFO     │ 📖 Đang xử lý trang 1/1 ...
-12:21:17 │ INFO     │ 📄 Trang 1/1: Thu thập 50/50 việc làm (tổng cộng: 50)
-12:21:17 │ INFO     │ 💾 Đã lưu 50 việc làm → D:\dsr-project\data\raw\topcv_jobs_raw.csv
-12:21:18 │ INFO     │ 🔒 Trình duyệt đã đóng
-12:21:18 │ INFO     │ ════════════════════════════════════════════════════════════
-12:21:18 │ INFO     │ ✅ HOÀN THÀNH: 50 việc làm trong 215.9 giây
-12:21:18 │ INFO     │ ════════════════════════════════════════════════════════════
+14:41:23 │ INFO     │ ✅ Đọc cấu hình từ D:\dsr-project\python_scraper\config.json thành công
+14:41:23 │ INFO     │ ✅ Đã ghi đè cấu hình từ user_settings.json
+14:41:23 │ INFO     │ ════════════════════════════════════════════════════════════
+14:41:23 │ INFO     │ 🏁 BẮT ĐẦU THU THẬP DỮ LIỆU TỪ TOPCV.VN
+14:41:23 │ INFO     │    URL: https://www.topcv.vn/tim-viec-lam-it-phan-mem-c10026
+14:41:23 │ INFO     │    Số trang tối đa: 1
+14:41:23 │ INFO     │ ════════════════════════════════════════════════════════════
+14:41:24 │ INFO     │ 🚀 Trình duyệt đã khởi tạo (headless=False)
+14:41:24 │ INFO     │ 🌐 Đang truy cập https://www.topcv.vn/tim-viec-lam-it-phan-mem-c10026 ...
+14:41:41 │ INFO     │ ────────────────────────────────────────
+14:41:41 │ INFO     │ 📖 Đang xử lý trang 1/1 ...

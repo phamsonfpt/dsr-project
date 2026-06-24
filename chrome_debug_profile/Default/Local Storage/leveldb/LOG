@@ -1,42 +1,5 @@
-2026/06/22-12:21:19.385 fe8 Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\Local Storage\leveldb/MANIFEST-000001
-2026/06/22-12:21:19.389 fe8 Recovering log #24
-2026/06/22-12:21:19.390 fe8 Reusing old log D:\dsr-project\chrome_debug_profile\Default\Local Storage\leveldb/000024.log 
-2026/06/22-12:22:19.396 6d4c Level-0 table #27: started
-2026/06/22-12:22:19.401 6d4c Level-0 table #27: 25906 bytes OK
-2026/06/22-12:22:19.402 6d4c Delete type=0 #24
-2026/06/22-12:22:19.402 6d4c Compacting 4@0 + 1@1 files
-2026/06/22-12:22:19.404 6d4c Generated table #28@0: 83 keys, 21868 bytes
-2026/06/22-12:22:19.404 6d4c Compacted 4@0 + 1@1 files => 21868 bytes
-2026/06/22-12:22:19.404 6d4c compacted to: files[ 0 1 1 0 0 0 0 ]
-2026/06/22-12:22:19.405 6d4c Delete type=2 #17
-2026/06/22-12:22:19.405 6d4c Delete type=2 #19
-2026/06/22-12:22:19.405 6d4c Delete type=2 #21
-2026/06/22-12:22:19.405 6d4c Delete type=2 #23
-2026/06/22-12:22:19.405 6d4c Delete type=2 #27
-2026/06/22-12:23:20.518 6d4c Level-0 table #30: started
-2026/06/22-12:23:20.521 6d4c Level-0 table #30: 17998 bytes OK
-2026/06/22-12:23:20.521 6d4c Delete type=0 #26
-2026/06/22-12:24:20.531 6d4c Level-0 table #32: started
-2026/06/22-12:24:20.533 6d4c Level-0 table #32: 17996 bytes OK
-2026/06/22-12:24:20.534 6d4c Delete type=0 #29
-2026/06/22-12:25:20.522 6d4c Level-0 table #34: started
-2026/06/22-12:25:20.524 6d4c Level-0 table #34: 18051 bytes OK
-2026/06/22-12:25:20.525 6d4c Delete type=0 #31
-2026/06/22-12:26:20.523 6d4c Level-0 table #36: started
-2026/06/22-12:26:20.525 6d4c Level-0 table #36: 18001 bytes OK
-2026/06/22-12:26:20.526 6d4c Delete type=0 #33
-2026/06/22-12:26:20.526 6d4c Compacting 4@0 + 1@1 files
-2026/06/22-12:26:20.528 6d4c Generated table #37@0: 83 keys, 21877 bytes
-2026/06/22-12:26:20.528 6d4c Compacted 4@0 + 1@1 files => 21877 bytes
-2026/06/22-12:26:20.528 6d4c compacted to: files[ 0 1 1 0 0 0 0 ]
-2026/06/22-12:26:20.529 6d4c Delete type=2 #28
-2026/06/22-12:26:20.529 6d4c Delete type=2 #30
-2026/06/22-12:26:20.529 6d4c Delete type=2 #32
-2026/06/22-12:26:20.529 6d4c Delete type=2 #34
-2026/06/22-12:26:20.529 6d4c Delete type=2 #36
-2026/06/22-12:27:20.529 6d4c Level-0 table #39: started
-2026/06/22-12:27:20.532 6d4c Level-0 table #39: 17989 bytes OK
-2026/06/22-12:27:20.533 6d4c Delete type=0 #35
-2026/06/22-12:27:59.124 6ec0 Level-0 table #41: started
-2026/06/22-12:27:59.126 6ec0 Level-0 table #41: 18052 bytes OK
-2026/06/22-12:27:59.127 6ec0 Delete type=0 #38
+2026/06/24-14:41:24.271 52dc Creating DB D:\dsr-project\chrome_debug_profile\Default\Local Storage\leveldb since it was missing.
+2026/06/24-14:41:24.278 52dc Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\Local Storage\leveldb/MANIFEST-000001
+2026/06/24-14:42:24.286 550 Level-0 table #5: started
+2026/06/24-14:42:24.295 550 Level-0 table #5: 640579 bytes OK
+2026/06/24-14:42:24.296 550 Delete type=0 #3

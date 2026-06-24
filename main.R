@@ -131,17 +131,7 @@ if (run_scrape) {
       warning("  -> VietnamWorks: Có lỗi xảy ra (exit code ", vnw_result, ")")
     }
 
-    # Chạy translator
-    cat("\n  [3/3] Đang dịch dữ liệu sang tiếng Anh (Vietnamese -> English)...\n")
-    trans_result <- system(
-      paste(python_cmd, shQuote(file.path(PROJECT_ROOT, "python_scraper", "translator.py"))),
-      intern = FALSE
-    )
-    if (trans_result == 0) {
-      cat("  -> Dịch thuật: Hoàn thành!\n")
-    } else {
-      warning("  -> Dịch thuật: Có lỗi xảy ra (exit code ", trans_result, ")")
-    }
+
 
 
   }, error = function(e) {
