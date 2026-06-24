@@ -131,9 +131,16 @@ get_project_root <- function() {
 # Kiểm tra schema đã tồn tại chưa (kiểm tra 3 bảng chính)
 # ==============================================================================
 .schema_exists <- function(con) {
-  required_tables <- c("jobs_clean", "job_skills", "market_trends")
+  required_tables <- c("jobs", "job_skills", "market_trends")
   existing <- dbListTables(con)
-  all(required_tables %in% existing)
+  if (!all(required_tables %in% existing)) return(FALSE)
+  
+  # Kiểm tra các cột trong bảng jobs để xem có tương thích với schema 21 cột mới không
+  cols <- dbListFields(con, "jobs")
+  required_cols <- c("location", "experience_level", "source")
+  if (!all(required_cols %in% cols)) return(FALSE)
+  
+  TRUE
 }
 
 # ==============================================================================
@@ -148,7 +155,7 @@ get_db_connection <- function() {
   db_dir <- dirname(db_path)
   if (!dir.exists(db_dir)) {
     dir.create(db_dir, recursive = TRUE)
-    message("[DB_CONFIG] \u0110\u00e3 t\u1ea1o th\u01b0 m\u1ee5c: ", db_dir)
+    message("[DB_CONFIG] Đã tạo thư mục: ", db_dir)
   }
 
   is_new_db <- !file.exists(db_path)
@@ -157,20 +164,28 @@ get_db_connection <- function() {
   con <- tryCatch(
     dbConnect(RSQLite::SQLite(), dbname = db_path),
     error = function(e) {
-      stop("[DB_CONFIG] Kh\u00f4ng th\u1ec3 k\u1ebft n\u1ed1i DB: ", conditionMessage(e))
+      stop("[DB_CONFIG] Không thể kết nối DB: ", conditionMessage(e))
     }
   )
 
-  # Bật foreign key enforcement
+  # Cấu hình tối ưu và tránh khóa DB
+  dbExecute(con, "PRAGMA busy_timeout = 10000;")
+  dbExecute(con, "PRAGMA journal_mode = WAL;")
   dbExecute(con, "PRAGMA foreign_keys = ON;")
 
-  # Tự khởi tạo schema nếu DB mới hoặc thiếu bảng
+  # Tự khởi tạo schema nếu DB mới hoặc thiếu bảng/cột
   if (is_new_db || !.schema_exists(con)) {
-    message("[DB_CONFIG] DB m\u1edbi ho\u1eb7c thi\u1ebfu b\u1ea3ng \u2014 \u0111ang kh\u1edfi t\u1ea1o schema...")
+    message("[DB_CONFIG] DB mới hoặc thiếu bảng/cột — đang khởi tạo lại schema...")
+    tryCatch({
+      dbExecute(con, "PRAGMA foreign_keys = OFF;")
+      dbExecute(con, "DROP TABLE IF EXISTS job_skills;")
+      dbExecute(con, "DROP TABLE IF EXISTS jobs;")
+      dbExecute(con, "PRAGMA foreign_keys = ON;")
+    }, error = function(e) NULL)
     .execute_init_sql(con)
   }
 
-  message("[DB_CONFIG] K\u1ebft n\u1ed1i DB th\u00e0nh c\u00f4ng: ", db_path)
+  message("[DB_CONFIG] Kết nối DB thành công: ", db_path)
   return(con)
 }
 

@@ -1,9 +1,30 @@
-2026/06/22-12:17:42.960 3024 Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\Session Storage/MANIFEST-000001
-2026/06/22-12:17:42.961 3024 Recovering log #4
-2026/06/22-12:17:42.962 3024 Reusing old log D:\dsr-project\chrome_debug_profile\Default\Session Storage/000004.log 
-2026/06/22-12:18:15.299 75d8 Level-0 table #8: started
-2026/06/22-12:18:15.301 75d8 Level-0 table #8: 11658 bytes OK
-2026/06/22-12:18:15.302 75d8 Delete type=0 #4
-2026/06/22-12:21:13.257 75d8 Level-0 table #10: started
-2026/06/22-12:21:13.260 75d8 Level-0 table #10: 16116 bytes OK
-2026/06/22-12:21:13.261 75d8 Delete type=0 #7
+2026/06/24-10:32:02.450 471c Reusing MANIFEST E:\learn\SU26\DSR301m\project_DSR\dsr-project\chrome_debug_profile\Default\Session Storage/MANIFEST-000001
+2026/06/24-10:32:02.450 471c Recovering log #58
+2026/06/24-10:32:02.451 471c Reusing old log E:\learn\SU26\DSR301m\project_DSR\dsr-project\chrome_debug_profile\Default\Session Storage/000058.log 
+2026/06/24-10:37:13.428 471c Level-0 table #63: started
+2026/06/24-10:37:13.435 471c Level-0 table #63: 15636 bytes OK
+2026/06/24-10:37:13.439 471c Delete type=0 #58
+2026/06/24-10:43:10.252 38fc Level-0 table #65: started
+2026/06/24-10:43:10.257 38fc Level-0 table #65: 15347 bytes OK
+2026/06/24-10:43:10.258 38fc Delete type=0 #62
+2026/06/24-10:48:56.421 471c Level-0 table #67: started
+2026/06/24-10:48:56.427 471c Level-0 table #67: 15382 bytes OK
+2026/06/24-10:48:56.443 471c Delete type=0 #64
+2026/06/24-10:54:59.526 38fc Level-0 table #69: started
+2026/06/24-10:54:59.540 38fc Level-0 table #69: 15303 bytes OK
+2026/06/24-10:54:59.541 38fc Delete type=0 #66
+2026/06/24-10:54:59.542 38fc Compacting 4@0 + 1@1 files
+2026/06/24-10:54:59.547 38fc Generated table #70@0: 8608 keys, 128395 bytes
+2026/06/24-10:54:59.547 38fc Compacted 4@0 + 1@1 files => 128395 bytes
+2026/06/24-10:54:59.548 38fc compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/06/24-10:54:59.548 38fc Delete type=2 #60
+2026/06/24-10:54:59.548 38fc Delete type=2 #63
+2026/06/24-10:54:59.548 38fc Delete type=2 #65
+2026/06/24-10:54:59.548 38fc Delete type=2 #67
+2026/06/24-10:54:59.548 38fc Delete type=2 #69
+2026/06/24-11:00:55.792 471c Level-0 table #72: started
+2026/06/24-11:00:55.798 471c Level-0 table #72: 15569 bytes OK
+2026/06/24-11:00:55.800 471c Delete type=0 #68
+2026/06/24-11:25:54.326 38fc Level-0 table #74: started
+2026/06/24-11:25:54.328 38fc Level-0 table #74: 14570 bytes OK
+2026/06/24-11:25:54.330 38fc Delete type=0 #71

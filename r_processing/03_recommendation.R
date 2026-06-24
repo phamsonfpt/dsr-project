@@ -89,28 +89,28 @@ build_tfidf_model <- function(con) {
   # --- 0. Tự động chọn chiến lược mô hình dựa trên số lượng data -----------
   # Ngưỡng: < 5000 jobs → Machine Learning (TF-IDF + Cosine Similarity)
   #         >= 5000 jobs → Deep Learning (Text Embedding + Qdrant Vector Search)
-  n_jobs  <- as.integer(dbGetQuery(con, "SELECT COUNT(*) as n FROM jobs_clean")[1, 1])
+  n_jobs  <- as.integer(dbGetQuery(con, "SELECT COUNT(*) as n FROM jobs")[1, 1])
   n_skills <- as.integer(dbGetQuery(con, "SELECT COUNT(*) as n FROM job_skills")[1, 1])
 
   ML_THRESHOLD <- 5000L  # Cần >= 5000 jobs để chạy Deep Learning (Embedding + Qdrant)
 
   model_strategy <- if (n_jobs >= ML_THRESHOLD) {
-    message("[RECOMMEND] \U0001f9e0 Chiến lược: DEEP LEARNING (", n_jobs, " jobs \u2265 ", ML_THRESHOLD,
+    message("[RECOMMEND] \u200b Chiến lược: DEEP LEARNING (", n_jobs, " jobs \u2265 ", ML_THRESHOLD,
             ") — Text Embedding + Qdrant Vector Search")
     "deep_learning"
   } else {
-    message("[RECOMMEND] \U0001f916 Chiến lược: MACHINE LEARNING (", n_jobs, " jobs < ", ML_THRESHOLD,
+    message("[RECOMMEND] \u200b Chiến lược: MACHINE LEARNING (", n_jobs, " jobs < ", ML_THRESHOLD,
             ") — TF-IDF + Cosine Similarity")
     "machine_learning"
   }
   message("[RECOMMEND]   Số skills: ", n_skills)
 
   # --- 1. Truy vấn dữ liệu jobs + skills ------------------------------------
-  jobs_df <- dbGetQuery(con, "SELECT * FROM jobs_clean")
+  jobs_df <- dbGetQuery(con, "SELECT * FROM jobs")
   skills_df <- dbGetQuery(con, "SELECT job_id, skill_name FROM job_skills")
 
   if (nrow(jobs_df) == 0) {
-    stop("[RECOMMEND] B\u1ea3ng jobs_clean r\u1ed7ng. H\u00e3y n\u1ea1p d\u1eef li\u1ec7u tr\u01b0\u1edbc.")
+    stop("[RECOMMEND] B\u1ea3ng jobs r\u1ed7ng. H\u00e3y n\u1ea1p d\u1eef li\u1ec7u tr\u01b0\u1edbc.")
   }
 
   message("[RECOMMEND]   S\u1ed1 jobs: ", nrow(jobs_df))
@@ -418,7 +418,7 @@ analyze_skill_gap <- function(candidate_skills, job_id, con) {
   # --- 3. Lấy thêm thông tin job để hiển thị ---------------------------------
   job_info <- dbGetQuery(
     con,
-    "SELECT title, company FROM jobs_clean WHERE job_id = ?",
+    "SELECT title, company FROM jobs WHERE job_id = ?",
     params = list(job_id)
   )
 

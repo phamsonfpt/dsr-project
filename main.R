@@ -80,10 +80,15 @@ if (run_scrape) {
   cat(paste(rep("=", 60), collapse = ""), "\n")
 
   tryCatch({
-    cat("\n  [0/2] Xóa dữ liệu raw và database cũ theo yêu cầu...\n")
-    unlink(file.path(PROJECT_ROOT, "data", "raw", "*.csv"), force = TRUE)
-    unlink(file.path(PROJECT_ROOT, "database", "job_market.sqlite"), force = TRUE)
-    cat("  -> Đã xóa dữ liệu cũ thành công.\n\n")
+    cat("\n  [0/1] Xóa database cũ để tạo lại từ đầu...\n")
+    db_file <- file.path(PROJECT_ROOT, "database", "job_market.sqlite")
+    if (file.exists(db_file)) {
+      unlink(db_file, force = TRUE)
+      if (file.exists(db_file)) {
+        stop("Không thể xóa file database cũ do file đang bị khóa bởi tiến trình khác (ví dụ: Shiny App đang chạy). Hãy tắt Shiny App trước khi chạy lại cào dữ liệu.")
+      }
+    }
+    cat("  -> Đã xóa database cũ.\n\n")
 
     # Kiểm tra Python khả dụng (Ưu tiên môi trường ảo .venv nếu có)
     venv_python <- file.path(PROJECT_ROOT, ".venv", "Scripts", "python.exe")
@@ -161,11 +166,11 @@ if (run_process) {
   cat(paste(rep("=", 60), collapse = ""), "\n")
 
   tryCatch({
-    # Bước 2a: Làm sạch & Load vào DB
-    cat("\n  [1/2] Làm sạch dữ liệu thô và lưu vào Database...\n")
-    source(file.path(PROJECT_ROOT, "r_processing", "01_data_cleaning.R"), local = TRUE)
-    clean_and_load_data()
-    cat("  -> Data Cleaning: Hoàn thành!\n")
+    # Bước 2a: Parse HTML → CSV → DB
+    cat("\n  [1/2] Parse HTML → CSV trung gian → Database...\n")
+    source(file.path(PROJECT_ROOT, "r_processing", "01_html_to_db.R"), local = TRUE)
+    html_to_db()
+    cat("  -> HTML to DB: Hoàn thành!\n")
 
     # Bước 2b: Phân tích xu hướng
     cat("\n  [2/2] Phân tích xu hướng thị trường...\n")
