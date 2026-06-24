@@ -100,16 +100,16 @@ run_market_analysis <- function() {
     # -----------------------------------------------------------------------
     message("\n[MARKET] \u0110ang truy v\u1ea5n d\u1eef li\u1ec7u t\u1eeb DB...")
 
-    jobs_df <- dbGetQuery(con, "SELECT * FROM jobs_clean")
+    jobs_df <- dbGetQuery(con, "SELECT * FROM jobs")
     skills_df <- dbGetQuery(con, "SELECT * FROM job_skills")
 
     if (nrow(jobs_df) == 0) {
-      message("[MARKET] \u274c B\u1ea3ng jobs_clean r\u1ed7ng. H\u00e3y ch\u1ea1y 01_data_cleaning.R tr\u01b0\u1edbc.")
+      message("[MARKET] ❌ Bảng jobs rỗng. Hãy chạy 01_html_to_db.R trước.")
       return(invisible(NULL))
     }
 
-    message("[MARKET]   jobs_clean : ", nrow(jobs_df), " b\u1ea3n ghi")
-    message("[MARKET]   job_skills : ", nrow(skills_df), " b\u1ea3n ghi")
+    message("[MARKET]   jobs : ", nrow(jobs_df), " bản ghi")
+    message("[MARKET]   job_skills : ", nrow(skills_df), " bản ghi")
 
     # Bắt đầu transaction
     dbBegin(con)

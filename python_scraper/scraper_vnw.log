@@ -34,3 +34,87 @@
 12:28:00 │ INFO     │ ════════════════════════════════════════════════════════════
 12:28:00 │ INFO     │ ✅ HOÀN THÀNH: 50 việc làm trong 401.0 giây
 12:28:00 │ INFO     │ ════════════════════════════════════════════════════════════
+14:59:42 │ INFO     │ ✅ Đọc cấu hình từ E:\learn\SU26\DSR301m\project_DSR\dsr-project\python_scraper\config.json thành công
+14:59:42 │ INFO     │ ✅ Đã ghi đè cấu hình từ user_settings.json
+14:59:42 │ INFO     │ ════════════════════════════════════════════════════════════
+14:59:42 │ INFO     │ 🏁 BẮT ĐẦU THU THẬP DỮ LIỆU TỪ VIETNAMWORKS.COM
+14:59:42 │ INFO     │    URL: https://www.vietnamworks.com/viec-lam?q=it-software
+14:59:42 │ INFO     │    Số trang tối đa: 1
+14:59:42 │ INFO     │ ════════════════════════════════════════════════════════════
+14:59:42 │ INFO     │ 🚀 Trình duyệt đã khởi tạo (headless=False)
+14:59:42 │ INFO     │ 🌐 Đang truy cập https://www.vietnamworks.com/viec-lam?q=it-software ...
+15:00:03 │ INFO     │ ────────────────────────────────────────
+15:00:03 │ INFO     │ 📖 Đang xử lý trang 1/1 ...
+15:00:10 │ INFO     │ Tìm thấy 50 job cards với selector 'css:div[data-job-card-version]'
+15:05:14 │ WARNING  │   ⚠️  [38/50] Lỗi trích xuất: 
+The connection to the page has been disconnected.
+Version: 4.1.1.4
+15:05:14 │ INFO     │ 📄 Trang 1/1: Thu thập 37/50 việc làm (tổng cộng: 37)
+15:05:14 │ INFO     │ 💾 Đã lưu 37 việc làm → E:\learn\SU26\DSR301m\project_DSR\dsr-project\data\raw\vnw_jobs_raw.csv
+15:05:14 │ INFO     │ 🔒 Trình duyệt đã đóng
+15:05:14 │ INFO     │ ════════════════════════════════════════════════════════════
+15:05:14 │ INFO     │ ✅ HOÀN THÀNH: 37 việc làm trong 332.4 giây
+15:05:14 │ INFO     │ ════════════════════════════════════════════════════════════
+15:36:51 │ INFO     │ ✅ Đọc cấu hình từ E:\learn\SU26\DSR301m\project_DSR\dsr-project\python_scraper\config.json thành công
+15:36:51 │ INFO     │ ✅ Đã ghi đè cấu hình từ user_settings.json
+15:36:51 │ INFO     │ ════════════════════════════════════════════════════════════
+15:36:51 │ INFO     │ 🏁 BẮT ĐẦU THU THẬP DỮ LIỆU TỪ VIETNAMWORKS.COM
+15:36:51 │ INFO     │    URL: https://www.vietnamworks.com/viec-lam?q=it-software
+15:36:51 │ INFO     │    Số trang tối đa: 1
+15:36:51 │ INFO     │ ════════════════════════════════════════════════════════════
+15:36:52 │ INFO     │ 🚀 Trình duyệt đã khởi tạo (headless=False)
+15:36:52 │ INFO     │ 🌐 Đang truy cập https://www.vietnamworks.com/viec-lam?q=it-software ...
+15:37:17 │ INFO     │ ────────────────────────────────────────
+15:37:17 │ INFO     │ 📖 Đang xử lý trang 1/1 ...
+15:37:25 │ INFO     │ Tìm thấy 50 job cards với selector 'css:div[data-job-card-version]'
+15:44:04 │ INFO     │ 📄 Trang 1/1: Thu thập 50/50 việc làm (tổng cộng: 50)
+15:44:04 │ INFO     │ 💾 Đã lưu 50 việc làm → E:\learn\SU26\DSR301m\project_DSR\dsr-project\data\raw\vnw_jobs_raw.csv
+15:44:05 │ INFO     │ 🔒 Trình duyệt đã đóng
+15:44:05 │ INFO     │ ════════════════════════════════════════════════════════════
+15:44:05 │ INFO     │ ✅ HOÀN THÀNH: 50 việc làm trong 433.9 giây
+15:44:05 │ INFO     │ ════════════════════════════════════════════════════════════
+19:58:22 │ INFO     │ ✅ Đọc cấu hình từ E:\learn\SU26\DSR301m\project_DSR\dsr-project\python_scraper\config.json thành công
+19:58:23 │ INFO     │ ✅ Đã ghi đè cấu hình từ user_settings.json
+19:58:23 │ INFO     │ ════════════════════════════════════════════════════════════
+19:58:23 │ INFO     │ 🏁 BẮT ĐẦU THU THẬP DỮ LIỆU TỪ VIETNAMWORKS.COM
+19:58:23 │ INFO     │    URL: https://www.vietnamworks.com/viec-lam?q=it-software
+19:58:23 │ INFO     │    Số trang tối đa: 1
+19:58:23 │ INFO     │ ════════════════════════════════════════════════════════════
+19:58:23 │ INFO     │ 🚀 Trình duyệt đã khởi tạo (headless=False)
+19:58:23 │ INFO     │ 🌐 Đang truy cập https://www.vietnamworks.com/viec-lam?q=it-software ...
+19:58:43 │ INFO     │ ────────────────────────────────────────
+19:58:43 │ INFO     │ 📖 Đang xử lý trang 1/1 ...
+19:58:50 │ INFO     │ Tìm thấy 50 job cards với selector 'css:div[data-job-card-version]'
+20:05:35 │ INFO     │ 📄 Trang 1/1: Thu thập 50/50 việc làm (tổng cộng: 50)
+20:05:35 │ INFO     │ 💾 Đã lưu 50 việc làm → E:\learn\SU26\DSR301m\project_DSR\dsr-project\data\raw\vnw_jobs_raw.csv
+20:05:36 │ INFO     │ 🔒 Trình duyệt đã đóng
+20:05:36 │ INFO     │ ════════════════════════════════════════════════════════════
+20:05:36 │ INFO     │ ✅ HOÀN THÀNH: 50 việc làm trong 433.6 giây
+20:05:36 │ INFO     │ ════════════════════════════════════════════════════════════
+22:27:42 │ INFO     │ ✅ Đọc cấu hình từ E:\learn\SU26\DSR301m\project_DSR\dsr-project\python_scraper\config.json thành công
+22:27:42 │ INFO     │ ✅ Đã ghi đè cấu hình từ user_settings.json
+22:27:42 │ INFO     │ ════════════════════════════════════════════════════════════
+22:27:42 │ INFO     │ 🏁 BẮT ĐẦU THU THẬP DỮ LIỆU TỪ VIETNAMWORKS.COM
+22:27:42 │ INFO     │    URL: https://www.vietnamworks.com/viec-lam?q=it-software
+22:27:42 │ INFO     │    Số trang tối đa: 1
+22:27:42 │ INFO     │ ════════════════════════════════════════════════════════════
+22:27:43 │ INFO     │ 🚀 Trình duyệt đã khởi tạo (headless=False)
+22:27:43 │ INFO     │ 🌐 Đang truy cập https://www.vietnamworks.com/viec-lam?q=it-software ...
+22:28:01 │ INFO     │ ────────────────────────────────────────
+22:28:01 │ INFO     │ 📖 Đang xử lý trang 1/1 ...
+22:28:07 │ INFO     │ Tìm thấy 50 job cards với selector 'css:div[data-job-card-version]'
+22:34:32 │ INFO     │ 📄 Trang 1/1: Thu thập 50/50 việc làm (tổng cộng: 50)
+22:34:32 │ INFO     │ 💾 Đã lưu 50 việc làm → E:\learn\SU26\DSR301m\project_DSR\dsr-project\data\raw\vnw_jobs_raw.csv
+22:34:33 │ INFO     │ 🔒 Trình duyệt đã đóng
+22:34:33 │ INFO     │ ════════════════════════════════════════════════════════════
+22:34:33 │ INFO     │ ✅ HOÀN THÀNH: 50 việc làm trong 410.8 giây
+22:34:33 │ INFO     │ ════════════════════════════════════════════════════════════
+11:25:56 │ INFO     │ ✅ Đọc cấu hình từ E:\learn\SU26\DSR301m\project_DSR\dsr-project\python_scraper\config.json thành công
+11:25:56 │ INFO     │ ✅ Đã ghi đè cấu hình từ user_settings.json
+11:25:56 │ INFO     │ ════════════════════════════════════════════════════════════
+11:25:56 │ INFO     │ 🏁 BẮT ĐẦU THU THẬP DỮ LIỆU TỪ VIETNAMWORKS.COM
+11:25:56 │ INFO     │    URL: https://www.vietnamworks.com/viec-lam?q=it-software
+11:25:56 │ INFO     │    Số trang tối đa: 1
+11:25:56 │ INFO     │ ════════════════════════════════════════════════════════════
+11:25:56 │ INFO     │ 🚀 Trình duyệt đã khởi tạo (headless=False)
+11:25:56 │ INFO     │ 🌐 Đang truy cập https://www.vietnamworks.com/viec-lam?q=it-software ...

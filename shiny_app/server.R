@@ -76,7 +76,7 @@ server <- function(input, output, session) {
       all_skills(skills$skill_name)
 
       # Load distinct job titles for position suggestions
-      titles <- dbGetQuery(con, "SELECT DISTINCT title FROM jobs_clean ORDER BY title")
+      titles <- dbGetQuery(con, "SELECT DISTINCT title FROM jobs ORDER BY title")
       all_titles(titles$title)
 
     }, error = function(e) {
@@ -120,7 +120,7 @@ server <- function(input, output, session) {
     tryCatch({
       con <- get_db()
       on.exit(dbDisconnect(con), add = TRUE)
-      n <- dbGetQuery(con, "SELECT COUNT(*) AS n FROM jobs_clean")$n
+      n <- dbGetQuery(con, "SELECT COUNT(*) AS n FROM jobs")$n
       format(n, big.mark = ".", decimal.mark = ",")
     }, error = function(e) "—")
   })
@@ -132,7 +132,7 @@ server <- function(input, output, session) {
       on.exit(dbDisconnect(con), add = TRUE)
       avg <- dbGetQuery(con,
         "SELECT ROUND(AVG((COALESCE(salary_min,0) + COALESCE(salary_max,0)) / 2.0), 1) AS avg_sal
-         FROM jobs_clean
+         FROM jobs
          WHERE salary_min IS NOT NULL OR salary_max IS NOT NULL"
       )$avg_sal
       if (is.na(avg)) return("—")
@@ -458,7 +458,7 @@ server <- function(input, output, session) {
           SELECT j.job_id, j.title, j.company, j.salary_min, j.salary_max,
                  j.experience_level, j.location, j.url,
                  GROUP_CONCAT(js.skill_name, ', ') AS skills_text
-          FROM jobs_clean j
+          FROM jobs j
           LEFT JOIN job_skills js ON j.job_id = js.job_id
           GROUP BY j.job_id
         "

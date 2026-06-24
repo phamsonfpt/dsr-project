@@ -1,6 +1,3 @@
-2026/06/22-12:21:19.478 fe8 Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\Session Storage/MANIFEST-000001
-2026/06/22-12:21:19.479 fe8 Recovering log #9
-2026/06/22-12:21:19.480 fe8 Reusing old log D:\dsr-project\chrome_debug_profile\Default\Session Storage/000009.log 
-2026/06/22-12:25:28.680 6d4c Level-0 table #13: started
-2026/06/22-12:25:28.681 6d4c Level-0 table #13: 14062 bytes OK
-2026/06/22-12:25:28.682 6d4c Delete type=0 #9
+2026/06/24-11:25:56.481 4390 Reusing MANIFEST E:\learn\SU26\DSR301m\project_DSR\dsr-project\chrome_debug_profile\Default\Session Storage/MANIFEST-000001
+2026/06/24-11:25:56.482 4390 Recovering log #73
+2026/06/24-11:25:56.484 4390 Reusing old log E:\learn\SU26\DSR301m\project_DSR\dsr-project\chrome_debug_profile\Default\Session Storage/000073.log 

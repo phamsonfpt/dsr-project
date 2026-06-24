@@ -1,8 +1,3 @@
-2026/06/22-11:52:20.299 649c Creating DB D:\dsr-project\chrome_debug_profile\Default\IndexedDB\https_www.topcv.vn_0.indexeddb.leveldb since it was missing.
-2026/06/22-11:52:20.301 649c Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\IndexedDB\https_www.topcv.vn_0.indexeddb.leveldb/MANIFEST-000001
-2026/06/22-11:52:42.359 4378 Level-0 table #5: started
-2026/06/22-11:52:42.373 4378 Level-0 table #5: 1534235 bytes OK
-2026/06/22-11:52:42.374 4378 Delete type=0 #3
-2026/06/22-11:52:42.535 4378 Level-0 table #7: started
-2026/06/22-11:52:42.548 4378 Level-0 table #7: 2006283 bytes OK
-2026/06/22-11:52:42.548 4378 Delete type=0 #4
+2026/06/24-10:26:26.231 44b0 Reusing MANIFEST E:\learn\SU26\DSR301m\project_DSR\dsr-project\chrome_debug_profile\Default\IndexedDB\https_www.topcv.vn_0.indexeddb.leveldb/MANIFEST-000001
+2026/06/24-10:26:26.231 44b0 Recovering log #44
+2026/06/24-10:26:26.254 44b0 Reusing old log E:\learn\SU26\DSR301m\project_DSR\dsr-project\chrome_debug_profile\Default\IndexedDB\https_www.topcv.vn_0.indexeddb.leveldb/000044.log 

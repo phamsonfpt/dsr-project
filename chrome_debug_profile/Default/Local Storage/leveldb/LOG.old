@@ -1,5 +1,63 @@
-2026/06/22-12:17:42.831 3024 Reusing MANIFEST D:\dsr-project\chrome_debug_profile\Default\Local Storage\leveldb/MANIFEST-000001
-2026/06/22-12:17:42.835 3024 Recovering log #20
-2026/06/22-12:17:42.835 3024 Level-0 table #23: started
-2026/06/22-12:17:42.838 3024 Level-0 table #23: 17980 bytes OK
-2026/06/22-12:17:42.840 3024 Delete type=0 #20
+2026/06/24-10:32:02.384 471c Reusing MANIFEST E:\learn\SU26\DSR301m\project_DSR\dsr-project\chrome_debug_profile\Default\Local Storage\leveldb/MANIFEST-000001
+2026/06/24-10:32:02.387 471c Recovering log #90
+2026/06/24-10:32:02.388 471c Reusing old log E:\learn\SU26\DSR301m\project_DSR\dsr-project\chrome_debug_profile\Default\Local Storage\leveldb/000090.log 
+2026/06/24-10:34:03.637 38fc Level-0 table #94: started
+2026/06/24-10:34:03.643 38fc Level-0 table #94: 23399 bytes OK
+2026/06/24-10:34:03.645 38fc Delete type=0 #90
+2026/06/24-10:38:03.645 38fc Level-0 table #96: started
+2026/06/24-10:38:03.649 38fc Level-0 table #96: 27677 bytes OK
+2026/06/24-10:38:03.650 38fc Delete type=0 #93
+2026/06/24-10:38:03.651 38fc Compacting 4@0 + 1@1 files
+2026/06/24-10:38:03.666 38fc Generated table #97@0: 702 keys, 648634 bytes
+2026/06/24-10:38:03.666 38fc Compacted 4@0 + 1@1 files => 648634 bytes
+2026/06/24-10:38:03.667 38fc compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/06/24-10:38:03.668 38fc Delete type=2 #86
+2026/06/24-10:38:03.668 38fc Delete type=2 #88
+2026/06/24-10:38:03.668 38fc Delete type=2 #91
+2026/06/24-10:38:03.668 38fc Delete type=2 #94
+2026/06/24-10:38:03.668 38fc Delete type=2 #96
+2026/06/24-10:42:03.641 38fc Level-0 table #99: started
+2026/06/24-10:42:03.648 38fc Level-0 table #99: 27910 bytes OK
+2026/06/24-10:42:03.652 38fc Delete type=0 #95
+2026/06/24-10:45:03.641 38fc Level-0 table #101: started
+2026/06/24-10:45:03.649 38fc Level-0 table #101: 21554 bytes OK
+2026/06/24-10:45:03.652 38fc Delete type=0 #98
+2026/06/24-10:48:03.653 38fc Level-0 table #103: started
+2026/06/24-10:48:03.657 38fc Level-0 table #103: 22293 bytes OK
+2026/06/24-10:48:03.663 38fc Delete type=0 #100
+2026/06/24-10:51:03.637 38fc Level-0 table #105: started
+2026/06/24-10:51:03.640 38fc Level-0 table #105: 23361 bytes OK
+2026/06/24-10:51:03.642 38fc Delete type=0 #102
+2026/06/24-10:51:03.643 38fc Compacting 4@0 + 1@1 files
+2026/06/24-10:51:03.659 38fc Generated table #106@0: 772 keys, 650085 bytes
+2026/06/24-10:51:03.659 38fc Compacted 4@0 + 1@1 files => 650085 bytes
+2026/06/24-10:51:03.660 38fc compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/06/24-10:51:03.660 38fc Delete type=2 #97
+2026/06/24-10:51:03.660 38fc Delete type=2 #99
+2026/06/24-10:51:03.660 38fc Delete type=2 #101
+2026/06/24-10:51:03.661 38fc Delete type=2 #103
+2026/06/24-10:51:03.661 38fc Delete type=2 #105
+2026/06/24-10:54:03.638 38fc Level-0 table #108: started
+2026/06/24-10:54:03.644 38fc Level-0 table #108: 23774 bytes OK
+2026/06/24-10:54:03.646 38fc Delete type=0 #104
+2026/06/24-10:57:03.647 38fc Level-0 table #110: started
+2026/06/24-10:57:03.654 38fc Level-0 table #110: 24715 bytes OK
+2026/06/24-10:57:03.658 38fc Delete type=0 #107
+2026/06/24-11:00:03.634 38fc Level-0 table #112: started
+2026/06/24-11:00:03.639 38fc Level-0 table #112: 28038 bytes OK
+2026/06/24-11:00:03.641 38fc Delete type=0 #109
+2026/06/24-11:03:03.643 38fc Level-0 table #114: started
+2026/06/24-11:03:03.650 38fc Level-0 table #114: 26376 bytes OK
+2026/06/24-11:03:03.652 38fc Delete type=0 #111
+2026/06/24-11:03:03.652 38fc Compacting 4@0 + 1@1 files
+2026/06/24-11:03:03.669 38fc Generated table #115@0: 838 keys, 651654 bytes
+2026/06/24-11:03:03.669 38fc Compacted 4@0 + 1@1 files => 651654 bytes
+2026/06/24-11:03:03.670 38fc compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/06/24-11:03:03.671 38fc Delete type=2 #106
+2026/06/24-11:03:03.671 38fc Delete type=2 #108
+2026/06/24-11:03:03.671 38fc Delete type=2 #110
+2026/06/24-11:03:03.671 38fc Delete type=2 #112
+2026/06/24-11:03:03.671 38fc Delete type=2 #114
+2026/06/24-11:06:03.635 38fc Level-0 table #117: started
+2026/06/24-11:06:03.646 38fc Level-0 table #117: 29663 bytes OK
+2026/06/24-11:06:03.651 38fc Delete type=0 #113

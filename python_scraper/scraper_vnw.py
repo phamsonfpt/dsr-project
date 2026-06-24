@@ -725,10 +725,10 @@ class VietnamWorksScraper:
                 logger.info("─" * 40)
                 logger.info("📖 Đang xử lý trang %d/%d ...", page_num, self.max_pages)
 
-                jobs_found = self._scrape_page(page_num)
+                jobs_found, should_stop = self._scrape_page(page_num)
 
-                if jobs_found == 0:
-                    logger.info("⛔ Không còn kết quả. Dừng phân trang.")
+                if jobs_found == 0 or should_stop:
+                    logger.info("⛔ Không còn kết quả hoặc gặp giới hạn thời gian. Dừng phân trang.")
                     break
 
                 # Chuyển trang
